@@ -1,4 +1,4 @@
-from typing import Literal, Optional
+from typing import Optional
 
 from pydantic import BaseModel, model_validator
 
@@ -7,7 +7,7 @@ class Cardinality(BaseModel):
     """
     Class that represent the number of possible values.
     """
-    type: Literal['Infinite', 'BigInteger', 'Integer']
+    type: str
     value: Optional[int]
 
     def is_infinite(self) -> bool:
@@ -55,7 +55,7 @@ class Details(BaseModel):
     """
     Contains details about the requested Term.
     """
-    type: Literal['details'] = 'details'
+    type: str = 'details'
 
     cardinality: Cardinality
     length: Length

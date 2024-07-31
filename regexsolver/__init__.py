@@ -1,7 +1,7 @@
 from regexsolver.details import Details, Cardinality, Length
 
 
-from typing import List, Literal, Optional
+from typing import List, Optional
 from pydantic import BaseModel
 import requests
 
@@ -98,7 +98,7 @@ class Term(BaseModel):
     It can either be  a regular expression (regex) or a FAIR (Fast Automaton Internal Representation).
     """
 
-    type: Literal['regex', 'fair']
+    type: str
     value: str
     _details: Optional['Details'] = None
 

@@ -18,7 +18,7 @@ setup(
         'pydantic<=2.5.3, >2.4.0; python_version<"3.8"',
         'pydantic>=2.6.0; python_version>="3.8"'
     ],
-    python_requires='>=3.6',
+    python_requires='>=3.7',
     project_urls={
         "Project Homepage": "https://regexsolver.com/",
         "Documentation": "https://docs.regexsolver.com/",
@@ -29,9 +29,6 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3 :: Only",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
