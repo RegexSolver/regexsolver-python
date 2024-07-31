@@ -1,6 +1,6 @@
 import unittest
 
-from regexsolver.regexsolver import GenerateStringsRequest, MultiTermsRequest, Term
+from regexsolver import GenerateStringsRequest, MultiTermsRequest, Term
 
 
 class SerializationTest(unittest.TestCase):
