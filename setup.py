@@ -15,7 +15,8 @@ setup(
 
     install_requires=[
         'requests>=2.20.0',
-        'pydantic>=2.8.0'
+        'pydantic<=2.5.3, >2.4.0; python_version<"3.8"',
+        'pydantic>=2.6.0; python_version>="3.8"'
     ],
     python_requires='>=3.6',
     project_urls={
