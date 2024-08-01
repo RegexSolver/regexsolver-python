@@ -13,7 +13,7 @@ pip install --upgrade regexsolver
 
 ### Requirements
 
-- Python >=3.6
+- Python >=3.7
 
 ## Usage
 

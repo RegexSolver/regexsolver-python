@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=52.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "regexsolver"
+version = "1.0.0"
+authors = [
+    { name = "RegexSolver", email = "contact@regexsolver.com" },
+    { name = "Alexandre van Beurden" },
+]
+description = "RegexSolver allows you to manipulate regular expressions as sets, enabling operations such as intersection, union, and subtraction."
+keywords = [
+    "Regular Expression",
+    "regex",
+    "regexp",
+    "set",
+    "intersection",
+    "union",
+    "subtraction",
+    "difference",
+    "equivalence",
+    "subset",
+    "nfa",
+    "dfa",
+]
+readme = "README.md"
+license = { file = "LICENSE" }
+dependencies = [
+    'requests>=2.20.0',
+    'pydantic<=2.5.3, >2.4.0; python_version<"3.8"',
+    'pydantic>=2.6.0; python_version>="3.8"',
+]
+requires-python = ">=3.7"
+classifiers = [
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+[project.urls]
+Homepage = "https://regexsolver.com/"
+Issues = "https://github.com/RegexSolver/regexsolver-python/issues"
+Documentation = "https://docs.regexsolver.com/"
+"Source Code" = "https://github.com/RegexSolver/regexsolver-python"

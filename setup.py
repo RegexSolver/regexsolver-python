@@ -10,7 +10,7 @@ setup(
     author_email="contact@regexsolver.com",
     url="https://github.com/RegexSolver/regexsolver-python",
     license="MIT",
-    keywords="regex regexp set intersection union subtraction difference equivalence subset",
+    keywords="regex regexp set intersection union subtraction difference equivalence subset nfa dfa",
     packages=find_packages(exclude=["tests", "tests.*"]),
 
     install_requires=[
@@ -20,7 +20,8 @@ setup(
     ],
     python_requires='>=3.7',
     project_urls={
-        "Project Homepage": "https://regexsolver.com/",
+        "Homepage": "https://regexsolver.com/",
+        "Issues": "https://github.com/RegexSolver/regexsolver-python/issues",
         "Documentation": "https://docs.regexsolver.com/",
         "Source Code": "https://github.com/RegexSolver/regexsolver-python",
     },
