@@ -6,8 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "regexsolver"
 version = "1.0.0"
 authors = [
-    { name = "RegexSolver", email = "contact@regexsolver.com" },
-    { name = "Alexandre van Beurden" },
+    { name = "RegexSolver", email = "contact@regexsolver.com" }
 ]
 description = "RegexSolver allows you to manipulate regular expressions as sets, enabling operations such as intersection, union, and subtraction."
 keywords = [
