@@ -1,4 +1,5 @@
 # RegexSolver Python API Client
+[Homepage](https://regexsolver.com) | [Documentations](https://docs.regexsolver.com) | [Developper Console](https://console.regexsolver.com)
 
 This repository contains the source code of the Python library for [RegexSolver](https://regexsolver.com) API.
 
