@@ -18,7 +18,7 @@ pip install --upgrade regexsolver
 
 ## Usage
 
-In order to use the library you need to generate an API Token on our [Developer Console](https://regexsolver.com/).
+In order to use the library you need to generate an API Token on our [Developer Console](https://console.regexsolver.com/).
 
 ```python
 from regexsolver import RegexSolver, Term
