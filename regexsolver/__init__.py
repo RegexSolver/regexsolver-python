@@ -28,7 +28,7 @@ class RegexSolver:
             self.base_url = "https://api.regexsolver.com/"
             self.api_token = None
             self.headers = {
-                'User-Agent': 'RegexSolver Python / 1.0.0',
+                'User-Agent': 'RegexSolver Python / 1.0.1',
                 'Content-Type': 'application/json'
             }
 
