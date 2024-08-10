@@ -1,0 +1,12 @@
+{
+  "type": "details",
+  "cardinality": {
+    "type": "Infinite"
+  },
+  "length": [
+    2,
+    null
+  ],
+  "empty": false,
+  "total": false
+}

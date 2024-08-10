@@ -26,6 +26,23 @@ class TermsOperationTest(unittest.TestCase):
                 str(details)
             )
 
+    def test_get_details_infinite(self):
+        with open('tests/assets/response_getDetails_infinite.json') as response:
+            json_response = json.load(response)
+        with requests_mock.Mocker() as mock:
+            mock.post(
+                "https://api.regexsolver.com/api/analyze/details",
+                json=json_response, status_code=200
+            )
+
+            term = Term.regex(r"de.*")
+            details = term.get_details()
+
+            self.assertEqual(
+                "Details[cardinality=Infinite, length=Length[minimum=2, maximum=None], empty=False, total=False]",
+                str(details)
+            )
+
     def test_generate_strings(self):
         with open('tests/assets/response_generateStrings.json') as response:
             json_response = json.load(response)

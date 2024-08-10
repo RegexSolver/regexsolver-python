@@ -8,7 +8,7 @@ class Cardinality(BaseModel):
     Class that represent the number of possible values.
     """
     type: str
-    value: Optional[int]
+    value: Optional[int] = None
 
     def is_infinite(self) -> bool:
         """
