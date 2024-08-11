@@ -35,7 +35,7 @@ class Length(BaseModel):
     Contains the minimum and maximum length of possible values.
     """
 
-    minimum: int
+    minimum: Optional[int]
     maximum: Optional[int]
 
     @model_validator(mode="before")

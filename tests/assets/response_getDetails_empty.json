@@ -1,0 +1,13 @@
+{
+  "type": "details",
+  "cardinality": {
+    "type": "Integer",
+    "value": 0
+  },
+  "length": [
+    null,
+    null
+  ],
+  "empty": true,
+  "total": false
+}

@@ -4,9 +4,9 @@
     "type": "Infinite"
   },
   "length": [
-    2,
+    0,
     null
   ],
   "empty": false,
-  "total": false
+  "total": true
 }

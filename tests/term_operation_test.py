@@ -35,11 +35,28 @@ class TermsOperationTest(unittest.TestCase):
                 json=json_response, status_code=200
             )
 
-            term = Term.regex(r"de.*")
+            term = Term.regex(r".*")
             details = term.get_details()
 
             self.assertEqual(
-                "Details[cardinality=Infinite, length=Length[minimum=2, maximum=None], empty=False, total=False]",
+                "Details[cardinality=Infinite, length=Length[minimum=0, maximum=None], empty=False, total=True]",
+                str(details)
+            )
+    
+    def test_get_details_empty(self):
+        with open('tests/assets/response_getDetails_empty.json') as response:
+            json_response = json.load(response)
+        with requests_mock.Mocker() as mock:
+            mock.post(
+                "https://api.regexsolver.com/api/analyze/details",
+                json=json_response, status_code=200
+            )
+
+            term = Term.regex(r"a.")
+            details = term.get_details()
+
+            self.assertEqual(
+                "Details[cardinality=Integer(0), length=Length[minimum=None, maximum=None], empty=True, total=False]",
                 str(details)
             )
 

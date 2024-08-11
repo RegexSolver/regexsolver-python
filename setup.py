@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="regexsolver",
-    version="1.0.2",
+    version="1.0.3",
     description="RegexSolver allows you to manipulate regular expressions as sets, enabling operations such as intersection, union, and subtraction.",
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
