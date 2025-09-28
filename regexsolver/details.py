@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel, model_validator
 
@@ -12,19 +12,16 @@ class Cardinality(BaseModel):
 
     def is_infinite(self) -> bool:
         """
-        True if it has a finite number of values, False otherwise.
+        True if it has a infinite number of values, False otherwise.
         """
-        if self.type == 'Infinite':
-            return True
-        else:
-            return False
+        return self.type == 'infinite'
 
     def __str__(self):
-        if self.type == 'Infinite':
+        if self.type == 'infinite':
             return "Infinite"
-        elif self.type == 'BigInteger':
+        elif self.type == 'bigInteger':
             return 'BigInteger'
-        elif self.type == 'Integer':
+        elif self.type == 'integer':
             return "Integer({})".format(self.value)
         else:
             return 'Unknown'
@@ -39,10 +36,16 @@ class Length(BaseModel):
     maximum: Optional[int]
 
     @model_validator(mode="before")
-    def from_list(cls, values: list):
-        if len(values) != 2:
-            raise ValueError("List must contain exactly two elements")
-        return {'minimum': values[0], 'maximum': values[1]}
+    def from_list(cls, values: Any):
+        if isinstance(values, dict):
+            return {'minimum': values.get('min'), 'maximum': values.get('max')}
+        
+        if isinstance(values, list):
+            if len(values) != 2:
+                raise ValueError("List must contain exactly two elements")
+            return {'minimum': values[0], 'maximum': values[1]}
+        
+        return values
 
     def __str__(self):
         return "Length[minimum={}, maximum={}]".format(

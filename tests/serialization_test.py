@@ -1,6 +1,6 @@
 import unittest
 
-from regexsolver import GenerateStringsRequest, MultiTermsRequest, Term
+from regexsolver import GenerateStringsRequest, MultiTermsRequest, RequestOptions, ResponseFormat, Term
 
 
 class SerializationTest(unittest.TestCase):
@@ -31,7 +31,31 @@ class SerializationTest(unittest.TestCase):
                     {"type": "regex", "value": "ghi"}
                 ]
             },
-            request.model_dump()
+            request.model_dump(exclude_none=True)
+        )
+        
+        request = MultiTermsRequest(
+            terms=[Term.regex(r"abc"), Term.regex(r"def"), Term.regex(r"ghi")],
+            options=RequestOptions.from_args(response_format=ResponseFormat.FAIR, execution_timeout=400)
+        )
+        self.assertEqual(
+            {
+                "terms": [
+                    {"type": "regex", "value": "abc"},
+                    {"type": "regex", "value": "def"},
+                    {"type": "regex", "value": "ghi"}
+                ],
+                "options": {
+                    "schema_version": 1,
+                    "response": {
+                        "format": "fair"
+                    },
+                    "execution": {
+                        "timeout": 400
+                    }
+                }
+            },
+            request.model_dump(exclude_none=True)
         )
 
         request = GenerateStringsRequest(
@@ -41,7 +65,7 @@ class SerializationTest(unittest.TestCase):
                 "term": {"type": "regex", "value": "(abc|de){2,3}"},
                 "count": 10
             },
-            request.model_dump()
+            request.model_dump(exclude_none=True)
         )
 
         request = Term.regex(r"(abc|de){2,3}")

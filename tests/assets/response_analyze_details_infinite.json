@@ -1,7 +1,7 @@
 {
   "type": "details",
   "cardinality": {
-    "type": "Infinite"
+    "type": "infinite"
   },
   "length": [
     0,

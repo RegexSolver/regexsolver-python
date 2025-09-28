@@ -1,7 +1,7 @@
 {
   "type": "details",
   "cardinality": {
-    "type": "Integer",
+    "type": "integer",
     "value": 2
   },
   "length": [
