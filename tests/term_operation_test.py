@@ -77,6 +77,23 @@ class TermsOperationTest(unittest.TestCase):
                 str(details)
             )
             
+    def test_analyze_dot(self):
+        with open('tests/assets/response_analyze_dot.json') as response:
+            json_response = json.load(response)
+        with requests_mock.Mocker() as mock:
+            mock.post(
+                "https://api.regexsolver.com/api/analyze/dot",
+                json=json_response, status_code=200
+            )
+
+            term = Term.regex(r"(abc|de)")
+            dot = term.get_dot()
+
+            self.assertEqual(
+                "digraph G { ... }",
+                str(dot)
+            )
+            
     def test_analyze_empty_string(self):
         with open('tests/assets/response_analyze_empty_string.json') as response:
             json_response = json.load(response)
@@ -171,6 +188,23 @@ class TermsOperationTest(unittest.TestCase):
             self.assertEqual(
                 "Length[minimum=0, maximum=3]",
                 str(length)
+            )
+            
+    def test_analyze_pattern(self):
+        with open('tests/assets/response_analyze_pattern.json') as response:
+            json_response = json.load(response)
+        with requests_mock.Mocker() as mock:
+            mock.post(
+                "https://api.regexsolver.com/api/analyze/pattern",
+                json=json_response, status_code=200
+            )
+
+            term = Term.regex(r"abc.*")
+            pattern = term.get_pattern()
+
+            self.assertEqual(
+                "abc.*",
+                str(pattern)
             )
 
     def test_analyze_subset(self):

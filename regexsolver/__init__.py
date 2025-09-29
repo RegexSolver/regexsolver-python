@@ -97,6 +97,9 @@ class RegexSolver:
     def _analyze_dot(self, term: 'Term') -> str:
         return self._request('api/analyze/dot', term).get('value')
     
+    def _analyze_pattern(self, term: 'Term') -> str:
+        return self._request('api/analyze/pattern', term).get('value')
+    
     # Compute
     
     def _compute_repeat(self, request: 'RepeatRequest') -> 'Term':
@@ -140,9 +143,13 @@ class Term(BaseModel):
     type: TermType
     value: str
     _details: Optional['Details'] = None
+    _cardinality: Optional[Cardinality] = None
+    _length: Optional[Length] = None
     _empty: Optional[bool] = None
     _total: Optional[bool] = None
     _empty_string: Optional[bool] = None
+    _dot: Optional[str] = None
+    _pattern: Optional[str] = None
     
     model_config = {"use_enum_values": True}
 
@@ -171,10 +178,17 @@ class Term(BaseModel):
     def get_pattern(self) -> Optional[str]:
         """
         Return the regular expression pattern.
+        
+        If the term is not a regex the pattern will be resolved.
+        Results are cached on the instance to avoid repeated API calls.
         """
         if self.type == TermType.REGEX:
             return self.value
-        return None
+        elif self._pattern:
+            return self._pattern
+        else:
+            self._pattern = RegexSolver.get_instance()._analyze_pattern(self)
+            return self._pattern
 
     def get_details(self) -> Details:
         """
@@ -299,6 +313,8 @@ class Term(BaseModel):
         """
         if self._empty:
             return self._empty
+        elif self._details:
+            return self._details.empty
         else:
             self._empty = RegexSolver.get_instance()._analyze_empty(self)
             return self._empty
@@ -311,6 +327,8 @@ class Term(BaseModel):
         """
         if self._total:
             return self._total
+        elif self._details:
+            return self._details.total
         else:
             self._total = RegexSolver.get_instance()._analyze_total(self)
             return self._total
@@ -330,31 +348,54 @@ class Term(BaseModel):
     def get_dot(self) -> str:
         """
         Get the GraphViz DOT representation of this term.
+        
+        Results are cached on the instance to avoid repeated API calls.
 
         Returns:
             A DOT language string describing the automaton for this term.
         """
-        return RegexSolver.get_instance()._analyze_dot(self)
+        if self._dot:
+            return self._dot
+        else:
+            self._dot = RegexSolver.get_instance()._analyze_dot(self)
+            return self._dot
     
     def get_cardinality(self) -> Cardinality:
         """
         Get the cardinality of this term.
+        
+        Results are cached on the instance to avoid repeated API calls.
 
         Returns:
             A `Cardinality` object describing how many distinct strings
             are matched.
         """
-        return RegexSolver.get_instance()._analyze_cardinality(self)
+        
+        if self._cardinality:
+            return self._cardinality
+        elif self._details:
+            return self._details.cardinality
+        else:
+            self._cardinality = RegexSolver.get_instance()._analyze_cardinality(self)
+            return self._cardinality
     
     def get_length(self) -> Length:
         """
         Get the length bounds of this term.
+        
+        Results are cached on the instance to avoid repeated API calls.
 
         Returns:
             A `Length` object with the minimum and maximum string length
             matched by this term.
         """
-        return RegexSolver.get_instance()._analyze_length(self)
+        if self._length:
+            return self._length
+        elif self._length:
+            return self._details.length
+        else:
+            self._length = RegexSolver.get_instance()._analyze_length(self)
+            return self._length
 
     def serialize(self) -> str:
         """
