@@ -1,7 +1,7 @@
 # RegexSolver Python API Client
 [Homepage](https://regexsolver.com) | [Online Demo](https://regexsolver.com/demo) | [Documentation](https://docs.regexsolver.com) | [Developer Console](https://console.regexsolver.com)
 
-This repository contains the source code of the Python library for [RegexSolver](https://regexsolver.com) API.
+Python client for the RegexSolver API.
 
 RegexSolver is a powerful regular expression manipulation toolkit, that gives you the power to manipulate regex as if
 they were sets.
@@ -19,7 +19,7 @@ Requirements: Python >= 3.7
 2. Initialize the client and start working with terms:
 
 ```python
-from regexsolver import RegexSolver, ResponseFormat, Term
+from regexsolver import RegexSolver, Term
 
 # Initialize with your API token
 RegexSolver.initialize("YOUR_API_TOKEN")
@@ -30,11 +30,11 @@ term2 = Term.regex(r"de.*")
 term3 = Term.regex(r".*abc")
 
 # Compute intersection and difference
-result = term1.intersection(term2, term3, response_format="regex").difference(
-    Term.regex(r".+(abc|de).+"), response_format=ResponseFormat.REGEX
+result = term1.intersection(term2, term3).difference(
+    Term.regex(r".+(abc|de).+")
 )
 
-print(result)  # regex=deabc
+print(result.get_pattern())  # de(fg)*abc
 ```
 
 ## Key Concepts & Limitations
@@ -47,41 +47,49 @@ RegexSolver supports a subset of regular expressions that adhere to the principl
 - **Line Feed and Dot:** RegexSolver handles all characters the same way. The dot `.` matches any Unicode character including line feed (`\n`).
 - **Empty Regular Expressions:** The empty language (matches no string) is represented by constructs like `[]` (empty character class). This is distinct from the empty string.
 
-RegexSolver is based on the [regex-syntax](https://docs.rs/regex-syntax/0.8.5/regex_syntax/) library for parsing patterns. Unsupported features are parsed but ignored; they do not raise an error unless they affect semantics that cannot be represented (e.g., backreferences). This allows for some flexibility in writing regular expressions, but it is important to be aware of the unsupported features to avoid unexpected behavior.
-
 ## Response formats
 
 The API can handle terms in two formats:
 - `regex`: a regular expression pattern
-- `fair`: FAIR (Fast Automaton Internal Representation); a representation used internally by the RegexSolver engine.
+- `fair`: FAIR (Fast Automaton Internal Representation); a representation used internally by the RegexSolver engine
 
-For some operations returning a FAIR is cheaper for the engine. If you do not force a format, it will choose the most suitable one. To control the output, pass `response_format`:
+FAIR is a stable, versioned internal format intended for programmatic use.
+
+For some operations, returning FAIR is cheaper. If you do not force a format, it will choose the most suitable one. To control the output, pass `response_format`:
 
 ```python
 from regexsolver import RegexSolver, ResponseFormat, Term
 
-term = Term.regex(r"(ab|c){2}")
-u = term.union(Term.regex(r"de"), response_format=ResponseFormat.REGEX)
-print(u)  # regex=((c|ab){2}|de)
+term = Term.regex(r"abcde")
+result = term.union(Term.regex(r"de"), response_format=ResponseFormat.REGEX)
+print(result)  # regex=(abc)?de
 
-i = term.intersection(Term.regex(r"de.*"), response_format=ResponseFormat.FAIR)
-print(i)  # fair=...
+result = term.intersection(Term.regex(r"de.*"), response_format=ResponseFormat.FAIR)
+print(result)  # fair=...
 ```
 
 If the response format does not matter the argument `response_format` can be omitted or its value can be set to `ResponseFormat.ANY`.
 
+Regardless of a term's internal format, call `get_pattern()` to obtain a regex string.
+
 ## Bounding execution time
 
-Long computations can be bounded with `execution_timeout` (milliseconds). Most methods on Term accepts it:
+Set a server-side compute timeout in milliseconds with `execution_timeout`:
 
 ```python
-# Limit the server-side compute time to 300 ms
-res = Term.regex(r"(a|b){100}").intersection(
-    Term.regex(r"a+"),
-    execution_timeout=300
-)
+from regexsolver import ApiError, RegexSolver, Term
+
+# Limit the server-side compute time to 5 ms
+try:
+    res = Term.regex(r".*ab.*c(de|fg).*dab.*c(de|fg).*ab.*c(de|fg).*dab.*c").difference(
+        Term.regex(r".*abc.*"),
+        execution_timeout=5
+    )
+except ApiError as error:
+    print(error) # The API returned the following error: The operation took too much time.
 ```
-If time is exceeded, the API will return an error. Catch `ApiError` to handle it.
+
+There is no guarantee that the exact time will be respected.
 
 ## API Overview
 
@@ -120,13 +128,13 @@ The client exposes three main groups of operations:
 
 ## Cross-Language Support
 
-If you want to use this library with other programming languages, we provide a wide range of wrappers:
+If you want to use this library with other programming languages, we provide:
 - [regexsolver-java](https://github.com/RegexSolver/regexsolver-java)
 - [regexsolver-js](https://github.com/RegexSolver/regexsolver-js)
 
 For more information about how to use the wrappers, you can refer to our [guide](https://docs.regexsolver.com/getting-started.html).
 
-If you want to run the engine yourself you can also take a look at [regexsolver](https://github.com/RegexSolver/regexsolver).
+You can also take a look at [regexsolver](https://github.com/RegexSolver/regexsolver) which contains the source code of the engine.
 
 ## License
 
