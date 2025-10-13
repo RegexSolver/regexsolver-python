@@ -117,7 +117,7 @@ The client exposes three main groups of operations:
 | `t.union(*terms: Term)` | `Term` | Compute the union of `t` with the given terms. Supports `response_format` and `execution_timeout`. |
 | `t.intersection(*terms: Term)` | `Term` | Compute the intersection of `t` with the given terms. Supports `response_format` and `execution_timeout`. |
 | `t.difference(term: Term)` | `Term` | Compute the difference `t - term`. Supports `response_format` and `execution_timeout`. |
-| `t.repeat(min: int, max: Optional[int])` | `Term` | Computes the repetition of the term between `min` and `max` times; if `max` is `None`, the repetition is unbounded. Supports `response_format` and `execution_timeout`. |
+| `t.repeat(min: int, max: Optional[int])` | `Term` | Compute the repetition of the term between `min` and `max` times; if `max` is `None`, the repetition is unbounded. Supports `response_format` and `execution_timeout`. |
 
 ### Generate
 
