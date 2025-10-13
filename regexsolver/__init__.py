@@ -7,7 +7,6 @@ from regexsolver.details import Details, Cardinality, Length
 from typing import List, Optional
 from pydantic import BaseModel
 import requests
-from dotenv import load_dotenv
 
 class ApiError(Exception):
     """
@@ -26,18 +25,11 @@ class RegexSolver:
             raise Exception("This class is a singleton.")
         else:
             RegexSolver._instance = self
-            
-            load_dotenv()
-            
-            self._base_url = os.environ.get("REGEXSOLVER_BASE_URL", "https://api.regexsolver.com")
-            self._api_token = os.environ.get("REGEXSOLVER_API_TOKEN") or None
-            
+
             self._headers = {
                 'User-Agent': 'RegexSolver Python / 1.1.0',
                 'Content-Type': 'application/json'
             }
-            if self._api_token:
-                self._headers['Authorization'] = f'Bearer {self._api_token}'
 
     @classmethod
     def get_instance(cls):
@@ -46,11 +38,17 @@ class RegexSolver:
         return cls._instance
 
     @classmethod
-    def initialize(cls, api_token: str, base_url: str = None):
+    def initialize(cls, api_token: str = None, base_url: str = None):
         instance = cls.get_instance()
-        instance._api_token = api_token
+        if api_token:
+            instance._api_token = api_token
+        else:
+            instance._api_token = os.environ.get("REGEXSOLVER_API_TOKEN") or None
+        
         if base_url:
             instance._base_url = base_url
+        else:
+            instance._base_url = os.environ.get("REGEXSOLVER_BASE_URL", "https://api.regexsolver.com")
 
         instance._headers['Authorization'] = f'Bearer {instance._api_token}'
 

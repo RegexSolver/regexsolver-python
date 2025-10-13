@@ -21,8 +21,9 @@ Requirements: Python >= 3.7
 ```python
 from regexsolver import RegexSolver, Term
 
-# Initialize with your API token
-RegexSolver.initialize("YOUR_API_TOKEN")
+# Set REGEXSOLVER_API_TOKEN in your env and call initialize(),
+# or pass the token directly:
+RegexSolver.initialize()  # or RegexSolver.initialize("YOUR_API_TOKEN")
 
 # Create terms
 term1 = Term.regex(r"(abc|de|fg){2,}")
@@ -47,15 +48,13 @@ RegexSolver supports a subset of regular expressions that adhere to the principl
 - **Line Feed and Dot:** RegexSolver handles all characters the same way. The dot `.` matches any Unicode character including line feed (`\n`).
 - **Empty Regular Expressions:** The empty language (matches no string) is represented by constructs like `[]` (empty character class). This is distinct from the empty string.
 
-## Response formats
+## Response Formats
 
 The API can handle terms in two formats:
 - `regex`: a regular expression pattern
-- `fair`: FAIR (Fast Automaton Internal Representation); a representation used internally by the RegexSolver engine
+- `fair`: FAIR (Fast Automaton Internal Representation), a stable, versioned programmatic format
 
-FAIR is a stable, versioned internal format intended for programmatic use.
-
-For some operations, returning FAIR is cheaper. If you do not force a format, it will choose the most suitable one. To control the output, pass `response_format`:
+If you do not force a format, the server picks the most efficient one. Control it with `response_format`:
 
 ```python
 from regexsolver import RegexSolver, ResponseFormat, Term
@@ -68,9 +67,9 @@ result = term.intersection(Term.regex(r"de.*"), response_format=ResponseFormat.F
 print(result)  # fair=...
 ```
 
-If the response format does not matter the argument `response_format` can be omitted or its value can be set to `ResponseFormat.ANY`.
+If the format does not matter, omit `response_format` or set `ResponseFormat.ANY`.
 
-Regardless of a term's internal format, call `get_pattern()` to obtain a regex string.
+Regardless of internal format, use `get_pattern()` to obtain a regex string.
 
 ## Bounding execution time
 
@@ -89,7 +88,7 @@ except ApiError as error:
     print(error) # The API returned the following error: The operation took too much time.
 ```
 
-There is no guarantee that the exact time will be respected.
+Timeout is best effort. The exact time is not guaranteed.
 
 ## API Overview
 
@@ -100,14 +99,14 @@ The client exposes three main groups of operations:
 | Method | Return | Description |
 | -------- | ------- | ------- |
 | `t.get_details()` | `Details` | Return cardinality, length bounds, and if it is empty or total. |
-| `t.get_cardinality()` | `Cardinality` | Returns the cardinality of the term (i.e., the number of possible matched strings). |
-| `t.get_length()` | `Length` | Returns the minimum and maximum length of matched strings. |
+| `t.get_cardinality()` | `Cardinality` | Return the cardinality of the term (i.e., the number of possible matched strings). |
+| `t.get_length()` | `Length` | Return the minimum and maximum length of matched strings. |
 | `t.is_empty()` | `bool` | `True` if the term matches no string. |
 | `t.is_total()` | `bool` | `True` if the term matches all possible strings. |
 | `t.is_empty_string()` | `bool` | `True` if the term matches only the empty string. |
 | `t.equivalent(term: Term)` | `bool` | `True` if `t` and `term` accept exactly the same language. Supports `execution_timeout`. |
 | `t.subset(term: Term)` | `bool` | `True` if every string matched by `t` is also matched by `term`. Supports `execution_timeout`. |
-| `t.get_dot()` | `str` | Return a GraphViz DOT representation of the automaton for the term. |
+| `t.get_dot()` | `str` | Return a Graphviz DOT representation of the automaton for the term. |
 | `t.get_pattern()` | `str` | Return a regular expression pattern for the term. |
 
 ### Compute
