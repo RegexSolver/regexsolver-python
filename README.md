@@ -54,7 +54,7 @@ The API can handle terms in two formats:
 - `regex`: a regular expression pattern
 - `fair`: FAIR (Fast Automaton Internal Representation), a stable, signed format used internally by the engine
 
-By default, the server returns whatever the operation produces, with no extra convertion. Override with `response_format`:
+By default, the engine returns whatever the operation produces, with no extra convertion. Override with `response_format`:
 
 ```python
 from regexsolver import RegexSolver, ResponseFormat, Term
