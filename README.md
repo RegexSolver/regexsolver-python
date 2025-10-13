@@ -52,9 +52,9 @@ RegexSolver supports a subset of regular expressions that adhere to the principl
 
 The API can handle terms in two formats:
 - `regex`: a regular expression pattern
-- `fair`: FAIR (Fast Automaton Internal Representation), a stable, versioned programmatic format used internally by the engine
+- `fair`: FAIR (Fast Automaton Internal Representation), a stable, signed format used internally by the engine
 
-If you do not force a format, the server picks the most efficient one. Control it with `response_format`:
+By default, the server returns whatever the operation produces, with no extra convertion. Override with `response_format`:
 
 ```python
 from regexsolver import RegexSolver, ResponseFormat, Term
@@ -69,7 +69,7 @@ print(result)  # fair=...
 
 If the format does not matter, omit `response_format` or set it to `ResponseFormat.ANY`.
 
-Regardless of internal format, call `get_pattern()` to obtain a regex string.
+Regardless of internal format, you can call `get_pattern()` to obtain a regex string.
 
 ## Bounding execution time
 
