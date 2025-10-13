@@ -52,7 +52,7 @@ RegexSolver supports a subset of regular expressions that adhere to the principl
 
 The API can handle terms in two formats:
 - `regex`: a regular expression pattern
-- `fair`: FAIR (Fast Automaton Internal Representation), a stable, versioned programmatic format
+- `fair`: FAIR (Fast Automaton Internal Representation), a stable, versioned programmatic format used internally by the engine
 
 If you do not force a format, the server picks the most efficient one. Control it with `response_format`:
 
@@ -67,7 +67,7 @@ result = term.intersection(Term.regex(r"de.*"), response_format=ResponseFormat.F
 print(result)  # fair=...
 ```
 
-If the format does not matter, omit `response_format` or set `ResponseFormat.ANY`.
+If the format does not matter, omit `response_format` or set it to `ResponseFormat.ANY`.
 
 Regardless of internal format, call `get_pattern()` to obtain a regex string.
 
@@ -136,7 +136,7 @@ Timeout is best effort. The exact time is not guaranteed.
 | Method | Return | Description |
 | -------- | ------- | ------- |
 | `t.serialize()` | `str` | Returns a serialized form of `t`. |
-| `Term.deserialize(string: str)` | `Term` | Returns a deserialized term. |
+| `Term.deserialize(string: str)` | `Term` | Returns a deserialized term from the given `string`. |
 
 ## Cross-Language Support
 
