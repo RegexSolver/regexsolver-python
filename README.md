@@ -97,7 +97,7 @@ Timeout is best effort. The exact time is not guaranteed.
 ### Build
 | Method | Return | Description |
 | -------- | ------- | ------- |
-| `Term.fair(fair: str)` | `Term` | Creates a term from FAIR. |
+| `Term.fair(fair: str)` | `Term` | Creates a term from a FAIR. |
 | `Term.regex(regex: str)` | `Term` | Creates a term from a regex pattern. |
 
 ### Analyze
