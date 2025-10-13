@@ -69,7 +69,7 @@ print(result)  # fair=...
 
 If the format does not matter, omit `response_format` or set it to `ResponseFormat.ANY`.
 
-Regardless of internal format, you can call `get_pattern()` to obtain a regex string.
+Regardless of internal format, you can always call `get_pattern()` to obtain the regex pattern of a term.
 
 ## Bounding execution time
 
