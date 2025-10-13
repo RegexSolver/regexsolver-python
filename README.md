@@ -69,7 +69,7 @@ print(result)  # fair=...
 
 If the format does not matter, omit `response_format` or set `ResponseFormat.ANY`.
 
-Regardless of internal format, use `get_pattern()` to obtain a regex string.
+Regardless of internal format, call `get_pattern()` to obtain a regex string.
 
 ## Bounding execution time
 
@@ -92,38 +92,51 @@ Timeout is best effort. The exact time is not guaranteed.
 
 ## API Overview
 
-The client exposes three main groups of operations:
+`Term` exposes the following methods.
+
+### Build
+| Method | Return | Description |
+| -------- | ------- | ------- |
+| `Term.fair(fair: str)` | `Term` | Creates a term from FAIR. |
+| `Term.regex(regex: str)` | `Term` | Creates a term from a regex pattern. |
 
 ### Analyze
 
 | Method | Return | Description |
 | -------- | ------- | ------- |
-| `t.get_details()` | `Details` | Return cardinality, length bounds, and if it is empty or total. |
-| `t.get_cardinality()` | `Cardinality` | Return the cardinality of the term (i.e., the number of possible matched strings). |
-| `t.get_length()` | `Length` | Return the minimum and maximum length of matched strings. |
-| `t.is_empty()` | `bool` | `True` if the term matches no string. |
-| `t.is_total()` | `bool` | `True` if the term matches all possible strings. |
-| `t.is_empty_string()` | `bool` | `True` if the term matches only the empty string. |
 | `t.equivalent(term: Term)` | `bool` | `True` if `t` and `term` accept exactly the same language. Supports `execution_timeout`. |
+| `t.get_cardinality()` | `Cardinality` | Returns the cardinality of the term (i.e., the number of possible matched strings). |
+| `t.get_details()` | `Details` | Returns cardinality, length bounds, and if it is empty or total. |
+| `t.get_dot()` | `str` | Returns a Graphviz DOT representation of the automaton for the term. |
+| `t.get_fair()` | `str` | Returns the FAIR of the term if defined. |
+| `t.get_length()` | `Length` | Returns the minimum and maximum length of matched strings. |
+| `t.get_pattern()` | `str` | Returns a regular expression pattern for the term. |
+| `t.is_empty()` | `bool` | `True` if the term matches no string. |
+| `t.is_empty_string()` | `bool` | `True` if the term matches only the empty string. |
+| `t.is_total()` | `bool` | `True` if the term matches all possible strings. |
 | `t.subset(term: Term)` | `bool` | `True` if every string matched by `t` is also matched by `term`. Supports `execution_timeout`. |
-| `t.get_dot()` | `str` | Return a Graphviz DOT representation of the automaton for the term. |
-| `t.get_pattern()` | `str` | Return a regular expression pattern for the term. |
 
 ### Compute
 
 | Method | Return | Description |
 | -------- | ------- | ------- |
-| `t.concat(*terms: Term)` | `Term` | Concatenate `t` with the given terms. Supports `response_format` and `execution_timeout`. |
-| `t.union(*terms: Term)` | `Term` | Compute the union of `t` with the given terms. Supports `response_format` and `execution_timeout`. |
-| `t.intersection(*terms: Term)` | `Term` | Compute the intersection of `t` with the given terms. Supports `response_format` and `execution_timeout`. |
-| `t.difference(term: Term)` | `Term` | Compute the difference `t - term`. Supports `response_format` and `execution_timeout`. |
-| `t.repeat(min: int, max: Optional[int])` | `Term` | Compute the repetition of the term between `min` and `max` times; if `max` is `None`, the repetition is unbounded. Supports `response_format` and `execution_timeout`. |
+| `t.concat(*terms: Term)` | `Term` | Concatenates `t` with the given terms. Supports `response_format` and `execution_timeout`. |
+| `t.difference(term: Term)` | `Term` | Computes the difference `t - term`. Supports `response_format` and `execution_timeout`. |
+| `t.intersection(*terms: Term)` | `Term` | Computes the intersection of `t` with the given terms. Supports `response_format` and `execution_timeout`. |
+| `t.repeat(min: int, max: Optional[int])` | `Term` | Computes the repetition of the term between `min` and `max` times; if `max` is `None`, the repetition is unbounded. Supports `response_format` and `execution_timeout`. |
+| `t.union(*terms: Term)` | `Term` | Computes the union of `t` with the given terms. Supports `response_format` and `execution_timeout`. |
 
 ### Generate
 
 | Method | Return | Description |
 | -------- | ------- | ------- |
-| `t.generate_strings(count: int)` | `List[str]` | Generate up to `count` unique example strings matched by `t`. Supports `execution_timeout`. |
+| `t.generate_strings(count: int)` | `List[str]` | Generates up to `count` unique example strings matched by `t`. Supports `execution_timeout`. |
+
+### Other
+| Method | Return | Description |
+| -------- | ------- | ------- |
+| `t.serialize()` | `str` | Returns a serialized form of `t`. |
+| `Term.deserialize(string: str)` | `Term` | Returns a deserialized term. |
 
 ## Cross-Language Support
 
