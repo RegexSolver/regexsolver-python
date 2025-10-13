@@ -1,11 +1,13 @@
 from enum import Enum
+from importlib import metadata
+import os
 from regexsolver.details import Details, Cardinality, Length
 
 
 from typing import List, Optional
-from pydantic import Field, BaseModel
+from pydantic import BaseModel
 import requests
-
+from dotenv import load_dotenv
 
 class ApiError(Exception):
     """
@@ -24,12 +26,18 @@ class RegexSolver:
             raise Exception("This class is a singleton.")
         else:
             RegexSolver._instance = self
-            self.base_url = "https://api.regexsolver.com/"
-            self.api_token = None
-            self.headers = {
+            
+            load_dotenv()
+            
+            self._base_url = os.environ.get("REGEXSOLVER_BASE_URL", "https://api.regexsolver.com")
+            self._api_token = os.environ.get("REGEXSOLVER_API_TOKEN") or None
+            
+            self._headers = {
                 'User-Agent': 'RegexSolver Python / 1.1.0',
                 'Content-Type': 'application/json'
             }
+            if self._api_token:
+                self._headers['Authorization'] = f'Bearer {self._api_token}'
 
     @classmethod
     def get_instance(cls):
@@ -40,22 +48,22 @@ class RegexSolver:
     @classmethod
     def initialize(cls, api_token: str, base_url: str = None):
         instance = cls.get_instance()
-        instance.api_token = api_token
+        instance._api_token = api_token
         if base_url:
-            instance.base_url = base_url
+            instance._base_url = base_url
 
-        instance.headers['Authorization'] = f'Bearer {instance.api_token}'
+        instance._headers['Authorization'] = f'Bearer {instance._api_token}'
 
     def _get_request_url(self, endpoint: str) -> str:
-        if self.base_url.endswith('/'):
-            return self.base_url + endpoint
+        if self._base_url.endswith('/'):
+            return self._base_url + endpoint
         else:
-            return self.base_url + '/' + endpoint
+            return self._base_url + '/' + endpoint
 
     def _request(self, endpoint: str, request: BaseModel) -> dict:
         response = requests.post(
             self._get_request_url(endpoint),
-            headers=self.headers,
+            headers=self._headers,
             json=request.model_dump(exclude_none=True)
         )
 
@@ -457,15 +465,21 @@ class ExecutionOptions(BaseModel):
     
 class RequestOptions(BaseModel):
     schema_version: int = 1
-    response: ResponseOptions = Field(default_factory=ResponseOptions)
-    execution: ExecutionOptions = Field(default_factory=ExecutionOptions)
+    response: Optional[ResponseOptions] = None
+    execution: Optional[ExecutionOptions] = None
     
     @classmethod
-    def from_args(cls, response_format: ResponseFormat = None, execution_timeout: int = None):
-        return cls(
-            response=ResponseOptions(format=response_format),
-            execution=ExecutionOptions(timeout=execution_timeout),
-        )
+    def from_args(cls, response_format: ResponseFormat = None, execution_timeout: int = None) -> "RequestOptions | None":
+        response = None
+        if response_format:
+            response=ResponseOptions(format=response_format)
+        execution = None
+        if execution_timeout:
+            execution=ExecutionOptions(timeout=execution_timeout)
+        if response or execution:
+            return cls(response=response, execution=execution)
+        else:
+            return None
     
 class MultiTermsRequest(BaseModel):
     terms: List[Term]
