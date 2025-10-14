@@ -3,14 +3,14 @@ from setuptools import setup, find_packages
 setup(
     name="regexsolver",
     version="1.1.0",
-    description="RegexSolver allows you to manipulate regular expressions as sets, enabling operations such as intersection, union, and subtraction.",
+    description="RegexSolver is a powerful toolkit for building, combining, and analyzing regular expressions.",
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
     author="RegexSolver",
     author_email="contact@regexsolver.com",
     url="https://github.com/RegexSolver/regexsolver-python",
     license="MIT",
-    keywords="regex regexp set intersection union subtraction difference equivalence subset nfa dfa",
+    keywords="regex regexp pattern intersection union difference concat equivalence subset nfa dfa",
     packages=find_packages(exclude=["tests", "tests.*"]),
 
     install_requires=[
