@@ -1,7 +1,7 @@
 # RegexSolver Python API Client
 [Homepage](https://regexsolver.com) | [Online Demo](https://regexsolver.com/demo) | [Documentation](https://docs.regexsolver.com) | [Developer Console](https://console.regexsolver.com)
 
-**RegexSolver** is a powerful regular expression manipulation toolkit that lets you manipulate regular expressions as if they were sets. It provides a powerful API to perform operations like union, intersection, and difference on regex patterns, enabling advanced regex analysis and transformation.
+**RegexSolver** is a powerful toolkit for building, combining, and analyzing regular expressions. It is designed for constraint solvers, test generators, and other systems that need advanced regex operations.
 
 ## Installation
 
