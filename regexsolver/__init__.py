@@ -173,115 +173,7 @@ class Term(BaseModel):
         """
         return cls(type=TermType.REGEX, value=pattern)
 
-    def get_fair(self) -> Optional[str]:
-        """
-        Return the Fast Automaton Internal Representation (FAIR).
-        """
-        if self.type == TermType.FAIR:
-            return self.value
-        return None
-
-    def get_pattern(self) -> Optional[str]:
-        """
-        Return the regular expression pattern.
-        
-        If the term is not a regex the pattern will be resolved.
-        Results are cached on the instance to avoid repeated API calls.
-        """
-        if self.type == TermType.REGEX:
-            return self.value
-        elif self._pattern:
-            return self._pattern
-        else:
-            self._pattern = RegexSolver.get_instance()._analyze_pattern(self)
-            return self._pattern
-
-    def get_details(self) -> Details:
-        """
-        Analyze this term and return detailed information including cardinality,
-        length, and whether it is empty or total.
-
-        Results are cached on the instance to avoid repeated API calls.
-        """
-        if self._details:
-            return self._details
-        else:
-            self._details = RegexSolver.get_instance()._analyze_details(self)
-            return self._details
-
-    def generate_strings(self, count: int, execution_timeout=None) -> List[str]:
-        """
-        Generate up to `count` example strings that match this term.
-
-        Parameters:
-            count: Maximum number of unique strings to generate.
-            execution_timeout: Timeout in milliseconds for the server.
-
-        Returns:
-            A list of strings matched by this term.
-        """
-        request = GenerateStringsRequest(term=self, count=count, options=RequestOptions.from_args(execution_timeout=execution_timeout))
-        return RegexSolver.get_instance()._generate_strings(request)
-
-    def intersection(self, *terms: 'Term', response_format=None, execution_timeout=None) -> 'Term':
-        """
-        Compute the intersection of this term with one or more other terms.
-
-        Parameters:
-            terms: Additional terms to intersect with.
-            response_format: Output format (`regex`, `fair`, or `any`).
-            execution_timeout: Timeout in milliseconds for the server.
-
-        Returns:
-            A new term representing the intersection.
-        """
-        request = MultiTermsRequest(terms=[self] + list(terms), options=RequestOptions.from_args(response_format=response_format, execution_timeout=execution_timeout))
-        return RegexSolver.get_instance()._compute_intersection(request)
-
-    def union(self, *terms: 'Term', response_format=None, execution_timeout=None) -> 'Term':
-        """
-        Compute the union of this term with one or more other terms.
-
-        Parameters:
-            terms: Terms to combine with this one.
-            response_format: Output format (`regex`, `fair`, or `any`).
-            execution_timeout: Timeout in milliseconds for the server.
-
-        Returns:
-            A new term representing the union.
-        """
-        request = MultiTermsRequest(terms=[self] + list(terms), options=RequestOptions.from_args(response_format=response_format, execution_timeout=execution_timeout))
-        return RegexSolver.get_instance()._compute_union(request)
-
-    def difference(self, term: 'Term', response_format=None, execution_timeout=None) -> 'Term':
-        """
-        Compute the difference between this term and another.
-
-        Parameters:
-            term: The term to subtract from this one.
-            response_format: Output format (`regex`, `fair`, or `any`).
-            execution_timeout: Timeout in milliseconds for the server.
-
-        Returns:
-            A new term representing the set difference (this - term).
-        """
-        request = MultiTermsRequest(terms=[self, term], options=RequestOptions.from_args(response_format=response_format, execution_timeout=execution_timeout))
-        return RegexSolver.get_instance()._compute_difference(request)
-    
-    def concat(self, *terms: 'Term', response_format=None, execution_timeout=None) -> 'Term':
-        """
-        Concatenate this term with one or more other terms.
-
-        Parameters:
-            terms: Additional terms to append in sequence.
-            response_format: Output format (`regex`, `fair`, or `any`).
-            execution_timeout: Timeout in milliseconds for the server.
-
-        Returns:
-            A new term representing the concatenation.
-        """
-        request = MultiTermsRequest(terms=[self] + list(terms), options=RequestOptions.from_args(response_format=response_format, execution_timeout=execution_timeout))
-        return RegexSolver.get_instance()._compute_concat(request)
+    # Analyze
     
     def equivalent(self, term: 'Term', execution_timeout=None) -> bool:
         """
@@ -296,75 +188,6 @@ class Term(BaseModel):
         """
         request = MultiTermsRequest(terms=[self, term], options=RequestOptions.from_args(execution_timeout=execution_timeout))
         return RegexSolver.get_instance()._analyze_equivalent(request)
-    
-    def subset(self, term: 'Term', execution_timeout=None) -> bool:
-        """
-        Check whether this term is a subset of another.
-
-        Parameters:
-            term: The term to compare against.
-            execution_timeout: Timeout in milliseconds for the server.
-
-        Returns:
-            True if every string matched by this term is also matched by `term`.
-        """
-        request = MultiTermsRequest(terms=[self, term], options=RequestOptions.from_args(execution_timeout=execution_timeout))
-        return RegexSolver.get_instance()._analyze_subset(request)
-    
-    def is_empty(self) -> bool:
-        """
-        Check whether this term matches no string.
-
-        Results are cached on the instance to avoid repeated API calls.
-        """
-        if self._empty:
-            return self._empty
-        elif self._details:
-            return self._details.empty
-        else:
-            self._empty = RegexSolver.get_instance()._analyze_empty(self)
-            return self._empty
-        
-    def is_total(self) -> bool:
-        """
-        Check whether this term matches all possible strings.
-
-        Results are cached on the instance to avoid repeated API calls.
-        """
-        if self._total:
-            return self._total
-        elif self._details:
-            return self._details.total
-        else:
-            self._total = RegexSolver.get_instance()._analyze_total(self)
-            return self._total
-        
-    def is_empty_string(self) -> bool:
-        """
-        Check whether this term matches only the empty string.
-
-        Results are cached on the instance to avoid repeated API calls.
-        """
-        if self._empty_string:
-            return self._empty_string
-        else:
-            self._empty_string = RegexSolver.get_instance()._analyze_empty_string(self)
-            return self._empty_string
-        
-    def get_dot(self) -> str:
-        """
-        Get the GraphViz DOT representation of this term.
-        
-        Results are cached on the instance to avoid repeated API calls.
-
-        Returns:
-            A DOT language string describing the automaton for this term.
-        """
-        if self._dot:
-            return self._dot
-        else:
-            self._dot = RegexSolver.get_instance()._analyze_dot(self)
-            return self._dot
     
     def get_cardinality(self) -> Cardinality:
         """
@@ -384,6 +207,42 @@ class Term(BaseModel):
         else:
             self._cardinality = RegexSolver.get_instance()._analyze_cardinality(self)
             return self._cardinality
+        
+    def get_details(self) -> Details:
+        """
+        Analyze this term and return detailed information including cardinality,
+        length, and whether it is empty or total.
+
+        Results are cached on the instance to avoid repeated API calls.
+        """
+        if self._details:
+            return self._details
+        else:
+            self._details = RegexSolver.get_instance()._analyze_details(self)
+            return self._details
+        
+    def get_dot(self) -> str:
+        """
+        Get the GraphViz DOT representation of this term.
+        
+        Results are cached on the instance to avoid repeated API calls.
+
+        Returns:
+            A DOT language string describing the automaton for this term.
+        """
+        if self._dot:
+            return self._dot
+        else:
+            self._dot = RegexSolver.get_instance()._analyze_dot(self)
+            return self._dot
+
+    def get_fair(self) -> Optional[str]:
+        """
+        Return the Fast Automaton Internal Representation (FAIR).
+        """
+        if self.type == TermType.FAIR:
+            return self.value
+        return None
     
     def get_length(self) -> Length:
         """
@@ -403,6 +262,172 @@ class Term(BaseModel):
             self._length = RegexSolver.get_instance()._analyze_length(self)
             return self._length
 
+    def get_pattern(self) -> Optional[str]:
+        """
+        Return the regular expression pattern.
+        
+        If the term is not a regex the pattern will be resolved.
+        Results are cached on the instance to avoid repeated API calls.
+        """
+        if self.type == TermType.REGEX:
+            return self.value
+        elif self._pattern:
+            return self._pattern
+        else:
+            self._pattern = RegexSolver.get_instance()._analyze_pattern(self)
+            return self._pattern
+        
+    def is_empty(self) -> bool:
+        """
+        Check whether this term matches no string.
+
+        Results are cached on the instance to avoid repeated API calls.
+        """
+        if self._empty:
+            return self._empty
+        elif self._details:
+            return self._details.empty
+        else:
+            self._empty = RegexSolver.get_instance()._analyze_empty(self)
+            return self._empty
+        
+    def is_empty_string(self) -> bool:
+        """
+        Check whether this term matches only the empty string.
+
+        Results are cached on the instance to avoid repeated API calls.
+        """
+        if self._empty_string:
+            return self._empty_string
+        else:
+            self._empty_string = RegexSolver.get_instance()._analyze_empty_string(self)
+            return self._empty_string
+    
+    def is_total(self) -> bool:
+        """
+        Check whether this term matches all possible strings.
+
+        Results are cached on the instance to avoid repeated API calls.
+        """
+        if self._total:
+            return self._total
+        elif self._details:
+            return self._details.total
+        else:
+            self._total = RegexSolver.get_instance()._analyze_total(self)
+            return self._total
+    
+    def subset(self, term: 'Term', execution_timeout=None) -> bool:
+        """
+        Check whether this term is a subset of another.
+
+        Parameters:
+            term: The term to compare against.
+            execution_timeout: Timeout in milliseconds for the server.
+
+        Returns:
+            True if every string matched by this term is also matched by `term`.
+        """
+        request = MultiTermsRequest(terms=[self, term], options=RequestOptions.from_args(execution_timeout=execution_timeout))
+        return RegexSolver.get_instance()._analyze_subset(request)
+
+    # Compute
+    
+    def concat(self, *terms: 'Term', response_format=None, execution_timeout=None) -> 'Term':
+        """
+        Concatenate this term with one or more other terms.
+
+        Parameters:
+            terms: Additional terms to append in sequence.
+            response_format: Output format (`regex`, `fair`, or `any`).
+            execution_timeout: Timeout in milliseconds for the server.
+
+        Returns:
+            A new term representing the concatenation.
+        """
+        request = MultiTermsRequest(terms=[self] + list(terms), options=RequestOptions.from_args(response_format=response_format, execution_timeout=execution_timeout))
+        return RegexSolver.get_instance()._compute_concat(request)
+    
+    def difference(self, term: 'Term', response_format=None, execution_timeout=None) -> 'Term':
+        """
+        Compute the difference between this term and another.
+
+        Parameters:
+            term: The term to subtract from this one.
+            response_format: Output format (`regex`, `fair`, or `any`).
+            execution_timeout: Timeout in milliseconds for the server.
+
+        Returns:
+            A new term representing the set difference (this - term).
+        """
+        request = MultiTermsRequest(terms=[self, term], options=RequestOptions.from_args(response_format=response_format, execution_timeout=execution_timeout))
+        return RegexSolver.get_instance()._compute_difference(request)
+    
+    def intersection(self, *terms: 'Term', response_format=None, execution_timeout=None) -> 'Term':
+        """
+        Compute the intersection of this term with one or more other terms.
+
+        Parameters:
+            terms: Additional terms to intersect with.
+            response_format: Output format (`regex`, `fair`, or `any`).
+            execution_timeout: Timeout in milliseconds for the server.
+
+        Returns:
+            A new term representing the intersection.
+        """
+        request = MultiTermsRequest(terms=[self] + list(terms), options=RequestOptions.from_args(response_format=response_format, execution_timeout=execution_timeout))
+        return RegexSolver.get_instance()._compute_intersection(request)
+    
+    def repeat(self, min: int, max: Optional[int], response_format=None, execution_timeout=None) -> 'Term':
+        """
+        Computes the repetition of the term between `min` and `max` times; if `max` is `None`, the repetition is unbounded.
+
+        Parameters:
+            min: The lower bound of the repetition.
+            max: The upper bound of the repetition, if `None` the repetition is unbounded.
+            response_format: Output format (`regex`, `fair`, or `any`).
+            execution_timeout: Timeout in milliseconds for the server.
+
+        Returns:
+            A new term representing the repetition.
+        """
+        request = RepeatRequest(term=self, min=min, max=max, options=RequestOptions.from_args(response_format=response_format, execution_timeout=execution_timeout))
+        return RegexSolver.get_instance()._compute_repeat(request)
+    
+    
+    def union(self, *terms: 'Term', response_format=None, execution_timeout=None) -> 'Term':
+        """
+        Compute the union of this term with one or more other terms.
+
+        Parameters:
+            terms: Terms to combine with this one.
+            response_format: Output format (`regex`, `fair`, or `any`).
+            execution_timeout: Timeout in milliseconds for the server.
+
+        Returns:
+            A new term representing the union.
+        """
+        request = MultiTermsRequest(terms=[self] + list(terms), options=RequestOptions.from_args(response_format=response_format, execution_timeout=execution_timeout))
+        return RegexSolver.get_instance()._compute_union(request)
+
+    # Generate
+
+    def generate_strings(self, count: int, execution_timeout=None) -> List[str]:
+        """
+        Generate up to `count` example strings that match this term.
+
+        Parameters:
+            count: Maximum number of unique strings to generate.
+            execution_timeout: Timeout in milliseconds for the server.
+
+        Returns:
+            A list of strings matched by this term.
+        """
+        request = GenerateStringsRequest(term=self, count=count, options=RequestOptions.from_args(execution_timeout=execution_timeout))
+        return RegexSolver.get_instance()._generate_strings(request)
+    
+    # Other
+    
     def serialize(self) -> str:
         """
         Return a string representation of this term in the format

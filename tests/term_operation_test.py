@@ -8,7 +8,9 @@ from regexsolver import ApiError, RegexSolver, ResponseFormat, Term
 class TermsOperationTest(unittest.TestCase):
     def setUp(self):
         RegexSolver.initialize("TOKEN")
-        
+    
+    # Analyze
+    
     def test_analyze_cardinality(self):
         with open('tests/assets/response_analyze_cardinality.json') as response:
             json_response = json.load(response)
@@ -223,6 +225,8 @@ class TermsOperationTest(unittest.TestCase):
 
             self.assertEqual(True, result)
     
+    # Compute
+    
     def test_compute_concat(self):
         with open('tests/assets/response_compute_concat.json') as response:
             json_response = json.load(response)
@@ -271,6 +275,21 @@ class TermsOperationTest(unittest.TestCase):
             result = term1.intersection(term2, term3, response_format=ResponseFormat.REGEX)
 
             self.assertEqual("regex=deabc", str(result))
+            
+    def test_compute_repeat(self):
+        with open('tests/assets/response_compute_repeat.json') as response:
+            json_response = json.load(response)
+        with requests_mock.Mocker() as mock:
+            mock.post(
+                "https://api.regexsolver.com/api/compute/repeat",
+                json=json_response, status_code=200
+            )
+
+            term = Term.regex(r"abc")
+
+            result = term.repeat(3, 5, response_format=ResponseFormat.REGEX)
+
+            self.assertEqual("regex=abc{3,5}", str(result))
 
     def test_compute_union(self):
         with open('tests/assets/response_compute_union.json') as response:
@@ -288,6 +307,8 @@ class TermsOperationTest(unittest.TestCase):
             result = term1.union(term2, term3, response_format=ResponseFormat.REGEX)
 
             self.assertEqual("regex=(abc|de|fghi)", str(result))
+    
+    # Generate
             
     def test_generate_strings(self):
         with open('tests/assets/response_generate_strings.json') as response:
