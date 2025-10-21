@@ -60,7 +60,7 @@ term = Term.regex(r"abcde")
 result = term.union(Term.regex(r"de"), response_format=ResponseFormat.REGEX)
 print(result)  # regex=(abc)?de
 
-result = term.intersection(Term.regex(r"de.*"), response_format=ResponseFormat.FAIR)
+result = term.union(Term.regex(r"de"), response_format=ResponseFormat.FAIR)
 print(result)  # fair=...
 ```
 
