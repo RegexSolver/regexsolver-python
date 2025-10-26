@@ -103,7 +103,6 @@ Timeout is best effort. The exact time is not guaranteed.
 | -------- | ------- | ------- |
 | `t.equivalent(term: Term)` | `bool` | `True` if `t` and `term` accept exactly the same language. Supports `execution_timeout`. |
 | `t.get_cardinality()` | `Cardinality` | Returns the cardinality of the term (i.e., the number of possible matched strings). |
-| `t.get_details()` | `Details` | Returns cardinality, length bounds, and if it is empty or total. |
 | `t.get_dot()` | `str` | Returns a Graphviz DOT representation of the automaton for the term. |
 | `t.get_fair()` | `str` | Returns the FAIR of the term if defined. |
 | `t.get_length()` | `Length` | Returns the minimum and maximum length of matched strings. |

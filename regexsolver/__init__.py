@@ -1,12 +1,91 @@
 from enum import Enum
-from importlib import metadata
+from typing import Any, Optional
 import os
-from regexsolver.details import Details, Cardinality, Length
-
 
 from typing import List, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 import requests
+
+class Cardinality(BaseModel):
+    """
+    Class that represent the number of possible values.
+    """
+    type: str
+    value: Optional[int] = None
+
+    def is_infinite(self) -> bool:
+        """
+        True if it has a infinite number of values, False otherwise.
+        """
+        return self.type == 'infinite'
+
+    def __str__(self):
+        if self.type == 'infinite':
+            return "Infinite"
+        elif self.type == 'bigInteger':
+            return 'BigInteger'
+        elif self.type == 'integer':
+            return "Integer({})".format(self.value)
+        else:
+            return 'Unknown'
+
+
+class Length(BaseModel):
+    """
+    Contains the minimum and maximum length of possible values.
+    """
+
+    minimum: Optional[int]
+    maximum: Optional[int]
+
+    @model_validator(mode="before")
+    def from_list(cls, values: Any):
+        if isinstance(values, dict):
+            return {'minimum': values.get('min'), 'maximum': values.get('max')}
+        
+        if isinstance(values, list):
+            if len(values) != 2:
+                raise ValueError("List must contain exactly two elements")
+            return {'minimum': values[0], 'maximum': values[1]}
+        
+        return values
+
+    def __str__(self):
+        return "Length[minimum={}, maximum={}]".format(
+            self.minimum,
+            self.maximum
+        )
+
+class ResponseFormat(str, Enum):
+    ANY = "any"
+    REGEX = "regex"
+    FAIR = "fair"
+    
+class ResponseOptions(BaseModel):
+    format: Optional[ResponseFormat] = None
+    
+    model_config = {"use_enum_values": True}
+
+class ExecutionOptions(BaseModel):
+    timeout: Optional[int] = None
+    
+class RequestOptions(BaseModel):
+    schema_version: int = 1
+    response: Optional[ResponseOptions] = None
+    execution: Optional[ExecutionOptions] = None
+    
+    @classmethod
+    def from_args(cls, response_format: ResponseFormat = None, execution_timeout: int = None) -> "RequestOptions | None":
+        response = None
+        if response_format:
+            response=ResponseOptions(format=response_format)
+        execution = None
+        if execution_timeout:
+            execution=ExecutionOptions(timeout=execution_timeout)
+        if response or execution:
+            return cls(response=response, execution=execution)
+        else:
+            return None
 
 class ApiError(Exception):
     """
@@ -48,7 +127,7 @@ class RegexSolver:
         if base_url:
             instance._base_url = base_url
         else:
-            instance._base_url = os.environ.get("REGEXSOLVER_BASE_URL", "https://api.regexsolver.com")
+            instance._base_url = os.environ.get("REGEXSOLVER_BASE_URL", "https://api.regexsolver.com/v1/")
 
         instance._headers['Authorization'] = f'Bearer {instance._api_token}'
 
@@ -76,57 +155,54 @@ class RegexSolver:
     
     # Analyze
     
-    def _analyze_details(self, term: 'Term') -> Details:
-        return Details(**self._request('api/analyze/details', term))
-    
     def _analyze_cardinality(self, term: 'Term') -> Cardinality:
-        return Cardinality(**self._request('api/analyze/cardinality', term))
+        return Cardinality(**self._request('analyze/cardinality', term))
     
     def _analyze_length(self, term: 'Term') -> Length:
-        return Length(**self._request('api/analyze/length', term))
+        return Length(**self._request('analyze/length', term))
     
     def _analyze_equivalent(self, request: 'MultiTermsRequest') -> bool:
-        return self._request('api/analyze/equivalent', request).get('value')
+        return self._request('analyze/equivalent', request).get('value')
 
     def _analyze_subset(self, request: 'MultiTermsRequest') -> bool:
-        return self._request('api/analyze/subset', request).get('value')
+        return self._request('analyze/subset', request).get('value')
     
     def _analyze_empty(self, term: 'Term') -> bool:
-        return self._request('api/analyze/empty', term).get('value')
+        return self._request('analyze/empty', term).get('value')
     
     def _analyze_total(self, term: 'Term') -> bool:
-        return self._request('api/analyze/total', term).get('value')
+        return self._request('analyze/total', term).get('value')
     
     def _analyze_empty_string(self, term: 'Term') -> bool:
-        return self._request('api/analyze/empty_string', term).get('value')
+        return self._request('analyze/empty_string', term).get('value')
         
     def _analyze_dot(self, term: 'Term') -> str:
-        return self._request('api/analyze/dot', term).get('value')
+        return self._request('analyze/dot', term).get('value')
     
     def _analyze_pattern(self, term: 'Term') -> str:
-        return self._request('api/analyze/pattern', term).get('value')
+        return self._request('analyze/pattern', term).get('value')
     
     # Compute
     
     def _compute_repeat(self, request: 'RepeatRequest') -> 'Term':
-        return Term(**self._request('api/compute/repeat', request))
+        return Term(**self._request('compute/repeat', request))
 
     def _compute_intersection(self, request: 'MultiTermsRequest') -> 'Term':
-        return Term(**self._request('api/compute/intersection', request))
+        return Term(**self._request('compute/intersection', request))
 
     def _compute_union(self, request: 'MultiTermsRequest') -> 'Term':
-        return Term(**self._request('api/compute/union', request))
+        return Term(**self._request('compute/union', request))
 
     def _compute_difference(self, request: 'MultiTermsRequest') -> 'Term':
-        return Term(**self._request('api/compute/difference', request))
+        return Term(**self._request('compute/difference', request))
     
     def _compute_concat(self, request: 'MultiTermsRequest') -> 'Term':
-        return Term(**self._request('api/compute/concat', request))
+        return Term(**self._request('compute/concat', request))
     
     # Generate
 
     def _generate_strings(self, request: 'GenerateStringsRequest') -> List[str]:
-        return self._request('api/generate/strings', request).get('value')
+        return self._request('generate/strings', request).get('value')
     
     
 class TermType(str, Enum):
@@ -148,7 +224,6 @@ class Term(BaseModel):
 
     type: TermType
     value: str
-    _details: Optional['Details'] = None
     _cardinality: Optional[Cardinality] = None
     _length: Optional[Length] = None
     _empty: Optional[bool] = None
@@ -202,24 +277,10 @@ class Term(BaseModel):
         
         if self._cardinality:
             return self._cardinality
-        elif self._details:
-            return self._details.cardinality
         else:
             self._cardinality = RegexSolver.get_instance()._analyze_cardinality(self)
             return self._cardinality
         
-    def get_details(self) -> Details:
-        """
-        Analyze this term and return detailed information including cardinality,
-        length, and whether it is empty or total.
-
-        Results are cached on the instance to avoid repeated API calls.
-        """
-        if self._details:
-            return self._details
-        else:
-            self._details = RegexSolver.get_instance()._analyze_details(self)
-            return self._details
         
     def get_dot(self) -> str:
         """
@@ -285,8 +346,6 @@ class Term(BaseModel):
         """
         if self._empty:
             return self._empty
-        elif self._details:
-            return self._details.empty
         else:
             self._empty = RegexSolver.get_instance()._analyze_empty(self)
             return self._empty
@@ -311,8 +370,6 @@ class Term(BaseModel):
         """
         if self._total:
             return self._total
-        elif self._details:
-            return self._details.total
         else:
             self._total = RegexSolver.get_instance()._analyze_total(self)
             return self._total
@@ -473,37 +530,8 @@ class Term(BaseModel):
     def __hash__(self):
         return hash(self.serialize())
 
-class ResponseFormat(str, Enum):
-    ANY = "any"
-    REGEX = "regex"
-    FAIR = "fair"
-    
-class ResponseOptions(BaseModel):
-    format: Optional[ResponseFormat] = None
-    
-    model_config = {"use_enum_values": True}
 
-class ExecutionOptions(BaseModel):
-    timeout: Optional[int] = None
-    
-class RequestOptions(BaseModel):
-    schema_version: int = 1
-    response: Optional[ResponseOptions] = None
-    execution: Optional[ExecutionOptions] = None
-    
-    @classmethod
-    def from_args(cls, response_format: ResponseFormat = None, execution_timeout: int = None) -> "RequestOptions | None":
-        response = None
-        if response_format:
-            response=ResponseOptions(format=response_format)
-        execution = None
-        if execution_timeout:
-            execution=ExecutionOptions(timeout=execution_timeout)
-        if response or execution:
-            return cls(response=response, execution=execution)
-        else:
-            return None
-    
+
 class MultiTermsRequest(BaseModel):
     terms: List[Term]
     options: Optional[RequestOptions] = None

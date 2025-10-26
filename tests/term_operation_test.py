@@ -14,7 +14,7 @@ class TermsOperationTest(unittest.TestCase):
             json_response = json.load(response)
         with requests_mock.Mocker() as mock:
             mock.post(
-                "https://api.regexsolver.com/api/compute/intersection",
+                "https://api.regexsolver.com/v1/compute/intersection",
                 json=json_response, status_code=400
             )
 

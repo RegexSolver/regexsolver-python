@@ -18,33 +18,6 @@ class IntegrationTest(unittest.TestCase):
             "Integer(5)",
             str(cardinality)
         )
-
-    def test_analyze_details(self):
-        term = Term.regex(r"(abc|de)")
-        details = term.get_details()
-
-        self.assertEqual(
-            "Details[cardinality=Integer(2), length=Length[minimum=2, maximum=3], empty=False, total=False]",
-            str(details)
-        )
-
-    def test_analyze_details_infinite(self):
-        term = Term.regex(r".*")
-        details = term.get_details()
-
-        self.assertEqual(
-            "Details[cardinality=Infinite, length=Length[minimum=0, maximum=None], empty=False, total=True]",
-            str(details)
-        )
-    
-    def test_analyze_details_empty(self):
-        term = Term.regex(r"[]")
-        details = term.get_details()
-
-        self.assertEqual(
-            "Details[cardinality=Integer(0), length=Length[minimum=None, maximum=None], empty=True, total=False]",
-            str(details)
-        )
             
     def test_analyze_dot(self):
         term = Term.regex(r"(abc|de)")
