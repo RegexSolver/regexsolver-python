@@ -1,0 +1,17 @@
+setup.py
+setup.cfg
+tox.ini
+git_push.sh
+.travis.yml
+.gitlab-ci.yml
+pyproject.toml
+.github/
+docs/
+test/
+README.md
+
+
+regexsolver/__init__.py
+regexsolver/client.py
+regexsolver/exceptions.py
+regexsolver/models/*
