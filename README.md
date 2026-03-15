@@ -97,7 +97,7 @@ try:
     term2 = Term.regex(r".*abc.*")
     
     res = client.difference(term1, term2, execution_timeout=100)
-except BadRequestError as error:
+except TimeoutExceeded as error:
     print(error) # The API returned the following error: The operation took too much time.
 ```
 
