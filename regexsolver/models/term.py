@@ -1,3 +1,5 @@
+import re
+from re import Pattern
 from typing import Optional, Union, cast
 
 from regexsolver.generated.models import Term as GeneratedTerm
@@ -30,6 +32,7 @@ class Term:
         self._total: Optional[bool] = None
         self._pattern: Optional[str] = None
         self._dot: Optional[str] = None
+        self._compiled_regex: Optional[Pattern] = None
 
     @property
     def _actual_model(self) -> Union[TermRegex, TermFair]:
@@ -76,7 +79,7 @@ class Term:
         Returns:
             Term: A new Term instance representing the FAIR payload.
         """
-        gen_term = GeneratedTerm(TermFair(type="regex", value=fair))
+        gen_term = GeneratedTerm(TermFair(type="fair", value=fair))
         return cls(gen_term)
 
     @classmethod
@@ -96,11 +99,61 @@ class Term:
         """Retrieves the FAIR payload if the term was explicitly constructed as one.
 
         Returns:
-            Optional[str]: The FAIR payload string, or None if the term is a standard regex.
+            Optional[str]: The FAIR payload string, or None if the term is a regex.
         """
         if self.type == "fair":
             return self.value
         return None
+
+    def get_pattern(self) -> Optional[str]:
+        """Retrieves the term pattern if the term was explicitly constructed as a regex, or if the pattern was previously computed with the client.
+
+        Returns:
+            Optional[str]: The term pattern as a string, or None if the term is a FAIR and the pattern was not previously computed.
+        """
+        if self.type == "regex":
+            return self.value
+        elif self._pattern is not None:
+            return self._pattern
+        return None
+
+    def is_match(self, string: str) -> Optional[bool]:
+        """Evaluates if a string matches the term using Python's native `re` module.
+
+        Note: The RegexSolver engine is designed for pattern analysis and
+        computation, not string evaluation. Therefore, this string matching
+        feature is executed entirely client-side.
+
+        This method strictly enforces RegexSolver's language rules
+        by anchoring the expression (requiring a full string match) and allowing
+        the dot ('.') to match line feeds. The compiled regular expression is
+        cached on the instance for high-performance repeated matching.
+
+        Args:
+            string (str): The string to test against the term's pattern.
+
+        Returns:
+            Optional[bool]: True if the string exactly matches, False if it does not,
+            or None if the term's pattern is currently unknown (e.g., it is a FAIR
+            term whose pattern hasn't been computed by the client yet).
+
+        Raises:
+            ValueError: If the term's pattern contains syntax supported by RegexSolver
+            but unsupported by Python's native `re` engine.
+        """
+        pattern = self.get_pattern()
+        if pattern is None:
+            return None
+
+        if self._compiled_regex is None:
+            try:
+                self._compiled_regex = re.compile(pattern, flags=re.DOTALL)
+            except re.error as e:
+                raise ValueError(
+                    f"Pattern '{pattern}' cannot be evaluated by Python's re module: {e}"
+                )
+
+        return self._compiled_regex.fullmatch(string) is not None
 
     def serialize(self) -> str:
         """Serializes the Term into a portable string format.
@@ -142,3 +195,6 @@ class Term:
     def __hash__(self) -> int:
         """Generates a hash based on the serialized string representation."""
         return hash(self.serialize())
+
+    def __repr__(self) -> str:
+        return f"<Term(type={self.type}, value={self.value})>"

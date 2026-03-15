@@ -1,27 +1,33 @@
 import asyncio
-import threading
-import time
+import weakref
 from typing import List, Optional, Union
 
-from regexsolver.exceptions import ApiError
+from regexsolver.clients.rate_limiter import get_rate_limiter
+from regexsolver.exceptions import (
+    ApiError,
+    BadRequestError,
+    ForbiddenError,
+    InternalServerError,
+    NotFoundError,
+    TooManyRequestsError,
+    UnauthorizedError,
+)
 from regexsolver.generated import (
+    AnalyzeApi,
+    ApiClient,
     ApiException,
+    ComputeApi,
+    Configuration,
     ErrorResponse,
     ExecutionOptions,
-    ResponseOptions,
-    TwoTermsRequest,
-)
-from regexsolver.generated.api.analyze_api import AnalyzeApi
-from regexsolver.generated.api.compute_api import ComputeApi
-from regexsolver.generated.api.generate_api import GenerateApi
-from regexsolver.generated.api_client import ApiClient
-from regexsolver.generated.configuration import Configuration
-from regexsolver.generated.models import (
+    GenerateApi,
     GenerateStringsRequest,
     MultiTermsRequest,
     RepeatRequest,
     RequestOptions,
+    ResponseOptions,
     TermRequest,
+    TwoTermsRequest,
 )
 from regexsolver.models.cardinality import BigInteger, Infinite, Integer
 from regexsolver.models.length import Length
@@ -33,7 +39,7 @@ class AsyncRegexSolverClient:
     """The Asynchronous Client for RegexSolver.
 
     Provides non-blocking access to all RegexSolver API endpoints.
-    Should be instantiated using an `async with` context manager.
+    Can be used as a standalone object or as an `async with` context manager.
     """
 
     def __init__(self, api_token: str, base_url="https://api.regexsolver.com/v1"):
@@ -45,12 +51,31 @@ class AsyncRegexSolverClient:
         self._compute_api = ComputeApi(self.api_client)
         self._generate_api = GenerateApi(self.api_client)
 
-        self._lock = asyncio.Lock()
-        self._resume_time = 0.0
+        self._rate_limiter = get_rate_limiter(api_token)
+
+        # Ensure the underlying aiohttp session is closed when the client is GC'd.
+        self._finalizer = weakref.finalize(self, self._run_cleanup, self.api_client)
+
+    @staticmethod
+    def _run_cleanup(api_client: ApiClient):
+        """Finalizer callback to safely close the async client.
+
+        Since we cannot await in a finalizer, we try to create a task in the
+        currently running loop, or just let the session be collected by aiohttp.
+        """
+        try:
+            loop = asyncio.get_running_loop()
+            if loop.is_running():
+                loop.create_task(api_client.close())
+        except RuntimeError:
+            # No loop is running, we can't do much here.
+            # aiohttp will eventually emit a warning about unclosed session.
+            pass
 
     async def aclose(self):
         """Closes the underlying HTTP client session."""
-        await self.api_client.close()
+        if self._finalizer.detach():
+            await self.api_client.close()
 
     async def __aenter__(self):
         return self
@@ -62,39 +87,23 @@ class AsyncRegexSolverClient:
     async def _execute_with_retry(self, api_method, **kwargs):
         max_retries = 5
         retries = 0
-
         while True:
-            async with self._lock:
-                sleep_time = self._resume_time - time.time()
-
-            if sleep_time > 0:
-                await asyncio.sleep(sleep_time)
-
+            await self._rate_limiter.wait()
             try:
                 return await api_method(**kwargs)
-
             except ApiException as e:
                 if e.status == 429:
                     retries += 1
                     if retries > max_retries:
-                        raise ApiError(
+                        raise TooManyRequestsError(
                             "Max retries exceeded for 429 Too Many Requests.",
                             status_code=429,
                         )
-
-                    async with self._lock:
-                        sleep_time = self._resume_time - time.time()
-                        if sleep_time <= 0:
-                            headers = e.headers or {}
-                            retry_after = int(headers.get("Retry-After", 1))
-                            self._resume_time = time.time() + retry_after
-                            sleep_time = retry_after
-
-                    await asyncio.sleep(sleep_time)
+                    headers = e.headers or {}
+                    retry_after = float(headers.get("Retry-After", 1))
+                    await self._rate_limiter.trigger(retry_after)
                     continue
-
                 error_msg = e.reason
-
                 if e.body:
                     try:
                         parsed_error = ErrorResponse.from_json(e.body)
@@ -104,9 +113,31 @@ class AsyncRegexSolverClient:
                             error_msg = e.body
                     except Exception:
                         error_msg = e.body
-
                 error_msg = str(error_msg) if error_msg else "Unknown API Error"
-                raise ApiError(error_msg, status_code=e.status, body=e.body) from None
+                if e.status == 400:
+                    raise BadRequestError(
+                        error_msg, status_code=e.status, body=e.body
+                    ) from None
+                elif e.status == 401:
+                    raise UnauthorizedError(
+                        error_msg, status_code=e.status, body=e.body
+                    ) from None
+                elif e.status == 403:
+                    raise ForbiddenError(
+                        error_msg, status_code=e.status, body=e.body
+                    ) from None
+                elif e.status == 404:
+                    raise NotFoundError(
+                        error_msg, status_code=e.status, body=e.body
+                    ) from None
+                elif e.status == 500:
+                    raise InternalServerError(
+                        error_msg, status_code=e.status, body=e.body
+                    ) from None
+                else:
+                    raise ApiError(
+                        error_msg, status_code=e.status, body=e.body
+                    ) from None
 
     def _build_options(
         self,
@@ -114,9 +145,9 @@ class AsyncRegexSolverClient:
         response_format: Optional[Union[ResponseFormat, str]] = None,
     ) -> RequestOptions:
         options = RequestOptions(schemaVersion=1)
-        if execution_timeout:
+        if execution_timeout is not None:
             options.execution = ExecutionOptions(timeout=execution_timeout)
-        if response_format:
+        if response_format is not None:
             options.response = ResponseOptions(format=response_format)
         return options
 
@@ -323,8 +354,9 @@ class AsyncRegexSolverClient:
         Returns:
             str: A valid regular expression string representing the language.
         """
-        if term._pattern is not None:
-            return term._pattern
+        pattern = term.get_pattern()
+        if pattern is not None:
+            return pattern
         request = TermRequest(
             term=term._api_model, options=self._build_options(execution_timeout)
         )
@@ -512,305 +544,3 @@ class AsyncRegexSolverClient:
             self._generate_api.strings, generate_strings_request=request
         )
         return response.data.value
-
-
-class RegexSolverClient:
-    """Synchronous Client for RegexSolver.
-
-    Exposes all endpoints synchronously by managing a background event loop.
-    Should be instantiated using a standard `with` context manager.
-    """
-
-    def __init__(self, api_token: str, base_url="https://api.regexsolver.com/v1"):
-        self._aio = AsyncRegexSolverClient(api_token, base_url)
-        # Run a background event loop so sync methods don't crash in Jupyter/FastAPI
-        self._loop = asyncio.new_event_loop()
-        self._thread = threading.Thread(target=self._loop.run_forever, daemon=True)
-        self._thread.start()
-
-    def _run_sync(self, coro):
-        """Helper to execute async methods safely from the sync wrapper."""
-        future = asyncio.run_coroutine_threadsafe(coro, self._loop)
-        return future.result()
-
-    def close(self):
-        """Closes the underlying HTTP client session and stops the background thread."""
-        self._run_sync(self._aio.aclose())
-        self._loop.call_soon_threadsafe(self._loop.stop)
-        self._thread.join()
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close()
-
-    # --- ANALYZE ---
-    def get_cardinality(self, term: Term, execution_timeout: Optional[int] = None):
-        """Computes how many unique strings the term matches.
-
-        Args:
-            term: The term to analyze.
-            execution_timeout: Timeout in milliseconds for the operation.
-
-        Returns:
-            Cardinality: An object representing either an exact Integer, a BigInteger, or Infinite cardinality.
-        """
-        return self._run_sync(self._aio.get_cardinality(term, execution_timeout))
-
-    def get_length(self, term: Term, execution_timeout: Optional[int] = None):
-        """Computes the minimum and maximum length of strings matched by the term.
-
-        Args:
-            term: The term to analyze.
-            execution_timeout: Timeout in milliseconds for the operation.
-
-        Returns:
-            Length: An object containing `min` and `max` integers. Limits are `None` if unbounded or undefined.
-        """
-        return self._run_sync(self._aio.get_length(term, execution_timeout))
-
-    def equivalent(
-        self, term1: Term, term2: Term, execution_timeout: Optional[int] = None
-    ) -> bool:
-        """Checks if the two terms accept exactly the same language.
-
-        Args:
-            term1: The first term.
-            term2: The second term to compare against.
-            execution_timeout: Timeout in milliseconds for the operation.
-
-        Returns:
-            bool: True if they are entirely equivalent, False otherwise.
-        """
-        return self._run_sync(self._aio.equivalent(term1, term2, execution_timeout))
-
-    def subset(
-        self,
-        term_subset: Term,
-        term_superset: Term,
-        execution_timeout: Optional[int] = None,
-    ) -> bool:
-        """Checks if the first term's language is a subset of the second term's language.
-
-        Args:
-            term_subset: The term to test as the subset.
-            term_superset: The term representing the entire set space.
-            execution_timeout: Timeout in milliseconds for the operation.
-
-        Returns:
-            bool: True if every string matched by `term_subset` is also matched by `term_superset`.
-        """
-        return self._run_sync(
-            self._aio.subset(term_subset, term_superset, execution_timeout)
-        )
-
-    def is_empty(self, term: Term, execution_timeout: Optional[int] = None) -> bool:
-        """Checks if the term matches no strings at all.
-
-        Args:
-            term: The term to analyze.
-            execution_timeout: Timeout in milliseconds for the operation.
-
-        Returns:
-            bool: True if the language is completely empty.
-        """
-        return self._run_sync(self._aio.is_empty(term, execution_timeout))
-
-    def is_empty_string(
-        self, term: Term, execution_timeout: Optional[int] = None
-    ) -> bool:
-        """Checks if the term matches only the empty string.
-
-        Args:
-            term: The term to analyze.
-            execution_timeout: Timeout in milliseconds for the operation.
-
-        Returns:
-            bool: True if the term strictly matches the empty string ("") and nothing else.
-        """
-        return self._run_sync(self._aio.is_empty_string(term, execution_timeout))
-
-    def is_total(self, term: Term, execution_timeout: Optional[int] = None) -> bool:
-        """Checks if the term matches all possible strings.
-
-        Args:
-            term: The term to analyze.
-            execution_timeout: Timeout in milliseconds for the operation.
-
-        Returns:
-            bool: True if the term matches every possible strings.
-        """
-        return self._run_sync(self._aio.is_total(term, execution_timeout))
-
-    def get_pattern(self, term: Term, execution_timeout: Optional[int] = None) -> str:
-        """Returns a regular expression pattern that represents the term.
-
-        Args:
-            term: The term to extract the pattern from.
-            execution_timeout: Timeout in milliseconds for the operation.
-
-        Returns:
-            str: A valid regular expression string representing the language.
-        """
-        return self._run_sync(self._aio.get_pattern(term, execution_timeout))
-
-    def get_dot(self, term: Term, execution_timeout: Optional[int] = None) -> str:
-        """Builds a Graphviz DOT representation of the term's automaton.
-
-        Args:
-            term: The term to visualize.
-            execution_timeout: Timeout in milliseconds for the operation.
-
-        Returns:
-            str: The raw DOT syntax for Graphviz compilation.
-        """
-        return self._run_sync(self._aio.get_dot(term, execution_timeout))
-
-    # --- COMPUTE ---
-    def concat(
-        self,
-        *terms: Term,
-        response_format: Optional[Union[ResponseFormat, str]] = None,
-        execution_timeout: Optional[int] = None,
-    ) -> Term:
-        """Concatenates the given terms sequentially.
-
-        Args:
-            *terms: A dynamic list of terms to concatenate in order.
-            response_format: The return format of the term (any, regex or fair).
-            execution_timeout: Timeout in milliseconds for the operation.
-
-        Returns:
-            Term: A newly computed concatenated term.
-        """
-        return self._run_sync(
-            self._aio.concat(
-                *terms,
-                response_format=response_format,
-                execution_timeout=execution_timeout,
-            )
-        )
-
-    def intersection(
-        self,
-        *terms: Term,
-        response_format: Optional[Union[ResponseFormat, str]] = None,
-        execution_timeout: Optional[int] = None,
-    ) -> Term:
-        """Computes the intersection of the given terms.
-
-        Args:
-            *terms: A dynamic list of terms to intersect.
-            response_format: The return format of the term (any, regex or fair).
-            execution_timeout: Timeout in milliseconds for the operation.
-
-        Returns:
-            Term: A term representing only strings matched by ALL provided terms.
-        """
-        return self._run_sync(
-            self._aio.intersection(
-                *terms,
-                response_format=response_format,
-                execution_timeout=execution_timeout,
-            )
-        )
-
-    def union(
-        self,
-        *terms: Term,
-        response_format: Optional[Union[ResponseFormat, str]] = None,
-        execution_timeout: Optional[int] = None,
-    ) -> Term:
-        """Computes the union of the given terms.
-
-        Args:
-            *terms: A dynamic list of terms to combine.
-            response_format: The return format of the term (any, regex or fair).
-            execution_timeout: Timeout in milliseconds for the operation.
-
-        Returns:
-            Term: A term representing strings matched by ANY of the provided terms.
-        """
-        return self._run_sync(
-            self._aio.union(
-                *terms,
-                response_format=response_format,
-                execution_timeout=execution_timeout,
-            )
-        )
-
-    def difference(
-        self,
-        base_term: Term,
-        excluded_term: Term,
-        response_format: Optional[Union[ResponseFormat, str]] = None,
-        execution_timeout: Optional[int] = None,
-    ) -> Term:
-        """Computes the difference between the two provided terms.
-
-        Args:
-            base_term: The base language term to subtract from.
-            excluded_term: The term whose language should be removed from the base.
-            response_format: The return format of the term (any, regex or fair).
-            execution_timeout: Timeout in milliseconds for the operation.
-
-        Returns:
-            Term: A computed difference term.
-        """
-        return self._run_sync(
-            self._aio.difference(
-                base_term,
-                excluded_term,
-                response_format=response_format,
-                execution_timeout=execution_timeout,
-            )
-        )
-
-    def repeat(
-        self,
-        term: Term,
-        min_val: int,
-        max_val: Optional[int] = None,
-        response_format: Optional[Union[ResponseFormat, str]] = None,
-        execution_timeout: Optional[int] = None,
-    ) -> Term:
-        """Repeats a term between a minimum and maximum number of times.
-
-        Args:
-            term: The term to repeat.
-            min_val: The inclusive lower bound of repetitions.
-            max_val: The inclusive upper bound. If None, repetitions are unbounded.
-            response_format: The return format of the term (any, regex or fair).
-            execution_timeout: Timeout in milliseconds for the operation.
-
-        Returns:
-            Term: A computed repeated term.
-        """
-        return self._run_sync(
-            self._aio.repeat(
-                term,
-                min_val,
-                max_val,
-                response_format=response_format,
-                execution_timeout=execution_timeout,
-            )
-        )
-
-    # --- GENERATE ---
-    def generate_strings(
-        self, term: Term, count: int, execution_timeout: Optional[int] = None
-    ) -> List[str]:
-        """Generates up to `count` unique strings matched by the term.
-
-        Args:
-            term: The term to sample generated strings from.
-            count: The maximum number of unique strings to return.
-            execution_timeout: Timeout in milliseconds for the operation.
-
-        Returns:
-            List[str]: A list of strings that match the term.
-        """
-        return self._run_sync(
-            self._aio.generate_strings(term, count, execution_timeout)
-        )

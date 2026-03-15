@@ -1,0 +1,42 @@
+from unittest.mock import AsyncMock
+
+from regexsolver import Integer, RegexSolverClient, Term
+
+
+def test_sync_client_get_cardinality():
+    with RegexSolverClient(api_token="test-token") as client:
+        # Mock the underlying async client's method
+        client._aio.get_cardinality = AsyncMock(return_value=Integer(42))
+
+        term = Term.regex("abc")
+        result = client.get_cardinality(term)
+
+        assert isinstance(result, Integer)
+        assert result.value == 42
+        client._aio.get_cardinality.assert_called_once_with(term, None)
+
+
+def test_sync_client_is_empty():
+    with RegexSolverClient(api_token="test-token") as client:
+        client._aio.is_empty = AsyncMock(return_value=False)
+
+        term = Term.regex("abc")
+        result = client.is_empty(term)
+
+        assert result is False
+        client._aio.is_empty.assert_called_once_with(term, None)
+
+
+def test_sync_client_union():
+    with RegexSolverClient(api_token="test-token") as client:
+        mock_result_term = Term.regex("a|b")
+        client._aio.union = AsyncMock(return_value=mock_result_term)
+
+        term1 = Term.regex("a")
+        term2 = Term.regex("b")
+        result = client.union(term1, term2)
+
+        assert result == mock_result_term
+        client._aio.union.assert_called_once_with(
+            term1, term2, response_format=None, execution_timeout=None
+        )

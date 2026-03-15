@@ -1,8 +1,15 @@
-from regexsolver.client import (
-    AsyncRegexSolverClient,
-    RegexSolverClient,
+from regexsolver.clients.asynchronous import AsyncRegexSolverClient
+from regexsolver.clients.synchronous import RegexSolverClient
+from regexsolver.exceptions import (
+    ApiError,
+    BadRequestError,
+    ForbiddenError,
+    InternalServerError,
+    NotFoundError,
+    RegexSolverError,
+    TooManyRequestsError,
+    UnauthorizedError,
 )
-from regexsolver.exceptions import ApiError
 from regexsolver.models.cardinality import BigInteger, Cardinality, Infinite, Integer
 from regexsolver.models.length import Length
 from regexsolver.models.response_format import ResponseFormat
@@ -13,6 +20,13 @@ __all__ = [
     "RegexSolverClient",
     "Term",
     "ApiError",
+    "BadRequestError",
+    "ForbiddenError",
+    "InternalServerError",
+    "NotFoundError",
+    "RegexSolverError",
+    "TooManyRequestsError",
+    "UnauthorizedError",
     "BigInteger",
     "Infinite",
     "Integer",

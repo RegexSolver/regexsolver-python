@@ -6,33 +6,52 @@
 ## Installation
 
 ```sh
-pip install --upgrade regexsolver
+pip install regexsolver
 ```
-Requirements: Python >= 3.7
+
+Requirements: **Python >= 3.9**
 
 ## Quick Start
 
 1. Create an API token in the [Developer Console](https://console.regexsolver.com/).
-2. Initialize the client and start working with terms:
+2. Initialize the client and start working with terms.
+
+### Synchronous Usage
+
+The synchronous client is the easiest way to get started.
 
 ```python
-from regexsolver import RegexSolver, Term
+from regexsolver import RegexSolverClient, Term
 
-# Set REGEXSOLVER_API_TOKEN in your env and call initialize(),
-# or pass the token directly:
-RegexSolver.initialize()  # or RegexSolver.initialize("YOUR_API_TOKEN")
+client = RegexSolverClient("YOUR_API_TOKEN")
 
-# Create terms
 term1 = Term.regex(r"(abc|de|fg){2,}")
 term2 = Term.regex(r"de.*")
-term3 = Term.regex(r".*abc")
 
-# Compute intersection and difference
-result = term1.intersection(term2, term3).difference(
-    Term.regex(r".+(abc|de).+")
-)
+is_subset = client.subset(term1, term2)
+print(f"Is subset? {is_subset}")
+```
 
-print(result.get_pattern())  # de(fg)*abc
+### Asynchronous Usage
+
+For high-performance applications, use the asynchronous client.
+
+```python
+import asyncio
+from regexsolver import AsyncRegexSolverClient, Term
+
+client = AsyncRegexSolverClient("YOUR_API_TOKEN")
+
+async def main():
+    term1 = Term.regex(r"(abc|de|fg){2,}")
+    term2 = Term.regex(r"de.*")
+
+    intersection = await client.intersection(term1, term2)
+    pattern = await client.get_pattern(intersection)
+    print(pattern) # (abc|de|fg){2,}&de.*
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
 ## Key Concepts & Limitations
@@ -54,13 +73,13 @@ The API can handle terms in two formats:
 By default, the engine returns whatever the operation produces, with no extra convertion. Override with `response_format`:
 
 ```python
-from regexsolver import RegexSolver, ResponseFormat, Term
+term1 = Term.regex(r"abcde")
+term2 = Term.regex(r"de")
 
-term = Term.regex(r"abcde")
-result = term.union(Term.regex(r"de"), response_format=ResponseFormat.REGEX)
+result = client.union(term1, term2, response_format=ResponseFormat.REGEX)
 print(result)  # regex=(abc)?de
 
-result = term.union(Term.regex(r"de"), response_format=ResponseFormat.FAIR)
+result = client.union(term1, term2, response_format=ResponseFormat.FAIR)
 print(result)  # fair=...
 ```
 
@@ -73,15 +92,13 @@ Regardless of the format, you can always call `get_pattern()` to obtain the rege
 Set a server-side compute timeout in milliseconds with `execution_timeout`:
 
 ```python
-from regexsolver import ApiError, RegexSolver, Term
-
-# Limit the server-side compute time to 5 ms
+# Limit the server-side compute time to 100 ms
 try:
-    res = Term.regex(r".*ab.*c(de|fg).*dab.*c(de|fg).*ab.*c(de|fg).*dab.*c").difference(
-        Term.regex(r".*abc.*"),
-        execution_timeout=5
-    )
-except ApiError as error:
+    term1 = Term.regex(r".*ab.*c(de|fg).*dab.*c(de|fg).*ab.*c(de|fg).*dab.*c")
+    term2 = Term.regex(r".*abc.*")
+    
+    res = client.difference(term1, term2, execution_timeout=100)
+except BadRequestError as error:
     print(error) # The API returned the following error: The operation took too much time.
 ```
 
@@ -89,50 +106,37 @@ Timeout is best effort. The exact time is not guaranteed.
 
 ## API Overview
 
-`Term` exposes the following methods.
-
-### Build
-| Method | Return | Description |
-| -------- | ------- | ------- |
-| `Term.fair(fair: str)` | `Term` | Creates a term from a FAIR. |
-| `Term.regex(regex: str)` | `Term` | Creates a term from a regex pattern. |
+`RegexSolverClient` and `AsyncRegexSolverClient` exposes the following methods.
 
 ### Analyze
 
 | Method | Return | Description |
 | -------- | ------- | ------- |
-| `t.equivalent(term: Term)` | `bool` | `True` if `t` and `term` accept exactly the same language. Supports `execution_timeout`. |
-| `t.get_cardinality()` | `Cardinality` | Returns the cardinality of the term (i.e., the number of possible matched strings). |
-| `t.get_dot()` | `str` | Returns a Graphviz DOT representation of the automaton for the term. |
-| `t.get_fair()` | `str` | Returns the FAIR of the term if defined. |
-| `t.get_length()` | `Length` | Returns the minimum and maximum length of matched strings. |
-| `t.get_pattern()` | `str` | Returns a regular expression pattern for the term. |
-| `t.is_empty()` | `bool` | `True` if the term matches no string. |
-| `t.is_empty_string()` | `bool` | `True` if the term matches only the empty string. |
-| `t.is_total()` | `bool` | `True` if the term matches all possible strings. |
-| `t.subset(term: Term)` | `bool` | `True` if every string matched by `t` is also matched by `term`. Supports `execution_timeout`. |
+| `client.equivalent(t1, t2)` | `bool` | `True` if `t1` and `t2` accept exactly the same language. |
+| `client.get_cardinality(t)` | `Cardinality` | Returns the number of possible matched strings. |
+| `client.get_dot(t)` | `str` | Returns a Graphviz DOT representation of the automaton. |
+| `client.get_length(t)` | `Length` | Returns the minimum and maximum length of matched strings. |
+| `client.get_pattern(t)` | `str` | Returns a regular expression pattern for the term. |
+| `client.is_empty(t)` | `bool` | `True` if the term matches no string. |
+| `client.is_empty_string(t)` | `bool` | `True` if the term matches only the empty string. |
+| `client.is_total(t)` | `bool` | `True` if the term matches all possible strings. |
+| `client.subset(t1, t2)` | `bool` | `True` if every string matched by `t1` is also matched by `t2`. |
 
 ### Compute
 
 | Method | Return | Description |
 | -------- | ------- | ------- |
-| `t.concat(*terms: Term)` | `Term` | Concatenates `t` with the given terms. Supports `response_format` and `execution_timeout`. |
-| `t.difference(term: Term)` | `Term` | Computes the difference `t - term`. Supports `response_format` and `execution_timeout`. |
-| `t.intersection(*terms: Term)` | `Term` | Computes the intersection of `t` with the given terms. Supports `response_format` and `execution_timeout`. |
-| `t.repeat(min: int, max: Optional[int])` | `Term` | Computes the repetition of the term between `min` and `max` times; if `max` is `None`, the repetition is unbounded. Supports `response_format` and `execution_timeout`. |
-| `t.union(*terms: Term)` | `Term` | Computes the union of `t` with the given terms. Supports `response_format` and `execution_timeout`. |
+| `client.concat(*terms)` | `Term` | Concatenates multiple terms in order. |
+| `client.difference(t1, t2)` | `Term` | Computes the difference `t1 - t2`. |
+| `client.intersection(*terms)` | `Term` | Computes the intersection of the given terms. |
+| `client.repeat(t, min, max)` | `Term` | Computes the repetition of the term between `min` and `max` times. |
+| `client.union(*terms)` | `Term` | Computes the union of the given terms. |
 
 ### Generate
 
 | Method | Return | Description |
 | -------- | ------- | ------- |
-| `t.generate_strings(count: int)` | `List[str]` | Generates up to `count` unique example strings matched by `t`. Supports `execution_timeout`. |
-
-### Other
-| Method | Return | Description |
-| -------- | ------- | ------- |
-| `t.serialize()` | `str` | Returns a serialized form of `t`. |
-| `Term.deserialize(string: str)` | `Term` | Returns a deserialized term from the given `string`. |
+| `client.generate_strings(t, count)` | `List[str]` | Generates up to `count` unique example strings matched by `t`. |
 
 ## Cross-Language Support
 

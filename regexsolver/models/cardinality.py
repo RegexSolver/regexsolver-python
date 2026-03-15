@@ -9,6 +9,9 @@ class Cardinality(TermPropertiesMixin):
 
     pass
 
+    def __repr__(self) -> str:
+        return "<Cardinality>"
+
 
 @dataclass(frozen=True)
 class Infinite(Cardinality):
@@ -19,6 +22,9 @@ class Infinite(Cardinality):
 
     def is_empty_string(self) -> Optional[bool]:
         return False
+
+    def __repr__(self) -> str:
+        return "<Cardinality::Infinite>"
 
 
 @dataclass(frozen=True)
@@ -33,6 +39,9 @@ class BigInteger(Cardinality):
 
     def is_total(self) -> Optional[bool]:
         return False
+
+    def __repr__(self) -> str:
+        return "<Cardinality::BigInteger>"
 
 
 @dataclass(frozen=True)
@@ -55,3 +64,6 @@ class Integer(Cardinality):
 
     def is_total(self) -> Optional[bool]:
         return False
+
+    def __repr__(self) -> str:
+        return f"<Cardinality::Integer({self.value})>"
