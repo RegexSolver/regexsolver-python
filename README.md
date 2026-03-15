@@ -50,8 +50,7 @@ async def main():
     pattern = await client.get_pattern(intersection)
     print(pattern) # (abc|de|fg){2,}&de.*
 
-if __name__ == "__main__":
-    asyncio.run(main())
+asyncio.run(main())
 ```
 
 ## Key Concepts & Limitations

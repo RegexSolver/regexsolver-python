@@ -27,32 +27,67 @@ class ApiError(RegexSolverError):
 
 
 class BadRequestError(ApiError):
-    """Raised when the API returns a 400 Bad Request error.
+    """Raised when the API returns a 400 Bad Request error."""
 
-    Usually indicates one of the following issues:
-    - The provided regular expression is invalid or cannot be parsed.
-    - The requested `execution_timeout` exceeds the maximum allowed for your current plan.
-    - The number of terms provided in a multi-term operation exceeds the maximum allowed.
-    - The execution of the request exceeds the provided `execution_timeout` or the maximum allowed for your current plan.
-    """
+    pass
+
+
+class InvalidJsonError(BadRequestError):
+    """Raised when the provided JSON is invalid or cannot be parsed."""
+
+    pass
+
+
+class TooManyTermsError(BadRequestError):
+    """Raised when the number of terms provided exceeds the maximum allowed."""
+
+    pass
+
+
+class TimeoutTooLargeError(BadRequestError):
+    """Raised when the requested `execution_timeout` exceeds the maximum allowed for your current plan."""
+
+    pass
+
+
+class TimeoutExceededError(BadRequestError):
+    """Raised when the execution of the request exceeds the provided `execution_timeout` or the maximum allowed for your current plan."""
+
+    pass
+
+
+class TooManyStringsToGenerateError(BadRequestError):
+    """Raised when the requested number of strings to generate exceeds the maximum allowed."""
 
     pass
 
 
 class UnauthorizedError(ApiError):
-    """Raised when the API returns a 401 Unauthorized error.
+    """Raised when the API returns a 401 Unauthorized error."""
 
-    Indicates that the provided authentication token is missing, malformed, or invalid.
-    """
+    pass
+
+
+class MissingOrMalformedTokenError(UnauthorizedError):
+    """Raised when the provided authentication token is missing or malformed."""
+
+    pass
+
+
+class InvalidTokenError(UnauthorizedError):
+    """Raised when the provided authentication token is invalid."""
 
     pass
 
 
 class ForbiddenError(ApiError):
-    """Raised when the API returns a 403 Forbidden error.
+    """Raised when the API returns a 403 Forbidden error."""
 
-    Usually indicates that your account's monthly compute quota has been exceeded.
-    """
+    pass
+
+
+class QuotaExceededError(ForbiddenError):
+    """Raised when your account's monthly compute quota has been exceeded."""
 
     pass
 

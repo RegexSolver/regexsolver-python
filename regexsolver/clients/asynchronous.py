@@ -8,8 +8,16 @@ from regexsolver.exceptions import (
     BadRequestError,
     ForbiddenError,
     InternalServerError,
+    InvalidJsonError,
+    InvalidTokenError,
+    MissingOrMalformedTokenError,
     NotFoundError,
+    QuotaExceededError,
+    TimeoutExceededError,
+    TimeoutTooLargeError,
     TooManyRequestsError,
+    TooManyStringsToGenerateError,
+    TooManyTermsError,
     UnauthorizedError,
 )
 from regexsolver.generated import (
@@ -104,40 +112,47 @@ class AsyncRegexSolverClient:
                     await self._rate_limiter.trigger(retry_after)
                     continue
                 error_msg = e.reason
+                error_code = None
                 if e.body:
                     try:
                         parsed_error = ErrorResponse.from_json(e.body)
                         if parsed_error is not None:
                             error_msg = parsed_error.error
+                            error_code = parsed_error.error_code
                         else:
                             error_msg = e.body
                     except Exception:
                         error_msg = e.body
                 error_msg = str(error_msg) if error_msg else "Unknown API Error"
+
                 if e.status == 400:
-                    raise BadRequestError(
-                        error_msg, status_code=e.status, body=e.body
-                    ) from None
+                    if error_code == "InvalidJson":
+                        raise InvalidJsonError(error_msg, status_code=e.status, body=e.body) from None
+                    elif error_code == "TooManyTerms":
+                        raise TooManyTermsError(error_msg, status_code=e.status, body=e.body) from None
+                    elif error_code == "TimeoutTooLarge":
+                        raise TimeoutTooLargeError(error_msg, status_code=e.status, body=e.body) from None
+                    elif error_code == "TimeoutExceeded":
+                        raise TimeoutExceededError(error_msg, status_code=e.status, body=e.body) from None
+                    elif error_code == "TooManyStringsToGenerate":
+                        raise TooManyStringsToGenerateError(error_msg, status_code=e.status, body=e.body) from None
+                    raise BadRequestError(error_msg, status_code=e.status, body=e.body) from None
                 elif e.status == 401:
-                    raise UnauthorizedError(
-                        error_msg, status_code=e.status, body=e.body
-                    ) from None
+                    if error_code == "MissingOrMalformedToken":
+                        raise MissingOrMalformedTokenError(error_msg, status_code=e.status, body=e.body) from None
+                    elif error_code == "InvalidToken":
+                        raise InvalidTokenError(error_msg, status_code=e.status, body=e.body) from None
+                    raise UnauthorizedError(error_msg, status_code=e.status, body=e.body) from None
                 elif e.status == 403:
-                    raise ForbiddenError(
-                        error_msg, status_code=e.status, body=e.body
-                    ) from None
+                    if error_code == "QuotaExceeded":
+                        raise QuotaExceededError(error_msg, status_code=e.status, body=e.body) from None
+                    raise ForbiddenError(error_msg, status_code=e.status, body=e.body) from None
                 elif e.status == 404:
-                    raise NotFoundError(
-                        error_msg, status_code=e.status, body=e.body
-                    ) from None
+                    raise NotFoundError(error_msg, status_code=e.status, body=e.body) from None
                 elif e.status == 500:
-                    raise InternalServerError(
-                        error_msg, status_code=e.status, body=e.body
-                    ) from None
+                    raise InternalServerError(error_msg, status_code=e.status, body=e.body) from None
                 else:
-                    raise ApiError(
-                        error_msg, status_code=e.status, body=e.body
-                    ) from None
+                    raise ApiError(error_msg, status_code=e.status, body=e.body) from None
 
     def _build_options(
         self,

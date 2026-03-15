@@ -6,9 +6,20 @@ from regexsolver import (
     ApiError,
     AsyncRegexSolverClient,
     BadRequestError,
+    ForbiddenError,
     Infinite,
     Integer,
+    InvalidJsonError,
+    InvalidTokenError,
+    MissingOrMalformedTokenError,
+    NotFoundError,
+    QuotaExceededError,
     Term,
+    TimeoutExceededError,
+    TimeoutTooLargeError,
+    TooManyStringsToGenerateError,
+    TooManyTermsError,
+    UnauthorizedError,
 )
 from regexsolver.generated import ApiException
 
@@ -107,11 +118,90 @@ async def test_error_handling_400(async_client):
 
 
 @pytest.mark.asyncio
+async def test_error_handling_invalid_json(async_client):
+    error_400 = ApiException(status=400)
+    error_400.body = (
+        '{"success": false, "error": "Invalid JSON", "errorCode": "InvalidJson"}'
+    )
+    async_client._analyze_api.empty.side_effect = error_400
+    with pytest.raises(InvalidJsonError):
+        await async_client.is_empty(Term.regex("abc"))
+
+
+@pytest.mark.asyncio
+async def test_error_handling_too_many_terms(async_client):
+    error_400 = ApiException(status=400)
+    error_400.body = (
+        '{"success": false, "error": "Too many terms", "errorCode": "TooManyTerms"}'
+    )
+    async_client._compute_api.union.side_effect = error_400
+    with pytest.raises(TooManyTermsError):
+        await async_client.union(Term.regex("a"), Term.regex("b"))
+
+
+@pytest.mark.asyncio
+async def test_error_handling_timeout_too_large(async_client):
+    error_400 = ApiException(status=400)
+    error_400.body = '{"success": false, "error": "Timeout too large", "errorCode": "TimeoutTooLarge"}'
+    async_client._analyze_api.empty.side_effect = error_400
+    with pytest.raises(TimeoutTooLargeError):
+        await async_client.is_empty(Term.regex("abc"))
+
+
+@pytest.mark.asyncio
+async def test_error_handling_timeout_exceeded(async_client):
+    error_400 = ApiException(status=400)
+    error_400.body = '{"success": false, "error": "Timeout exceeded", "errorCode": "TimeoutExceeded"}'
+    async_client._analyze_api.empty.side_effect = error_400
+    with pytest.raises(TimeoutExceededError):
+        await async_client.is_empty(Term.regex("abc"))
+
+
+@pytest.mark.asyncio
+async def test_error_handling_too_many_strings_to_generate(async_client):
+    error_400 = ApiException(status=400)
+    error_400.body = '{"success": false, "error": "Too many strings", "errorCode": "TooManyStringsToGenerate"}'
+    async_client._generate_api.strings.side_effect = error_400
+    with pytest.raises(TooManyStringsToGenerateError):
+        await async_client.generate_strings(Term.regex("abc"), 1000)
+
+
+@pytest.mark.asyncio
+async def test_error_handling_missing_or_malformed_token(async_client):
+    error_401 = ApiException(status=401)
+    error_401.body = '{"success": false, "error": "Missing token", "errorCode": "MissingOrMalformedToken"}'
+    async_client._analyze_api.empty.side_effect = error_401
+    with pytest.raises(MissingOrMalformedTokenError):
+        await async_client.is_empty(Term.regex("abc"))
+
+
+@pytest.mark.asyncio
+async def test_error_handling_invalid_token(async_client):
+    error_401 = ApiException(status=401)
+    error_401.body = (
+        '{"success": false, "error": "Invalid token", "errorCode": "InvalidToken"}'
+    )
+    async_client._analyze_api.empty.side_effect = error_401
+    with pytest.raises(InvalidTokenError):
+        await async_client.is_empty(Term.regex("abc"))
+
+
+@pytest.mark.asyncio
+async def test_error_handling_quota_exceeded(async_client):
+    error_403 = ApiException(status=403)
+    error_403.body = (
+        '{"success": false, "error": "Quota exceeded", "errorCode": "QuotaExceeded"}'
+    )
+    async_client._analyze_api.empty.side_effect = error_403
+    with pytest.raises(QuotaExceededError):
+        await async_client.is_empty(Term.regex("abc"))
+
+
+@pytest.mark.asyncio
 async def test_error_handling_401(async_client):
     async_client._analyze_api.empty.side_effect = ApiException(
         status=401, reason="Unauthorized"
     )
-    from regexsolver import UnauthorizedError
 
     with pytest.raises(UnauthorizedError):
         await async_client.is_empty(Term.regex("abc"))
@@ -122,7 +212,6 @@ async def test_error_handling_403(async_client):
     async_client._analyze_api.empty.side_effect = ApiException(
         status=403, reason="Forbidden"
     )
-    from regexsolver import ForbiddenError
 
     with pytest.raises(ForbiddenError):
         await async_client.is_empty(Term.regex("abc"))
@@ -133,7 +222,6 @@ async def test_error_handling_404(async_client):
     async_client._analyze_api.empty.side_effect = ApiException(
         status=404, reason="Not Found"
     )
-    from regexsolver import NotFoundError
 
     with pytest.raises(NotFoundError):
         await async_client.is_empty(Term.regex("abc"))
