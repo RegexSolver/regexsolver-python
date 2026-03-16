@@ -1,6 +1,9 @@
 import asyncio
+import logging
 import threading
 from typing import Dict, Optional
+
+logger = logging.getLogger(__name__)
 
 
 class RateLimiter:
@@ -50,6 +53,9 @@ class RateLimiter:
         async with self._lock:
             if not self._event.is_set():
                 return  # already being handled
+            logger.debug(
+                f"Rate limit triggered. Delaying operations for {retry_after} seconds."
+            )
             self._event.clear()
             if self._reopen_task and not self._reopen_task.done():
                 self._reopen_task.cancel()
@@ -64,6 +70,7 @@ class RateLimiter:
         await asyncio.sleep(delay)
         if self._event is None:
             raise RuntimeError("RateLimiter event not initialized.")
+        logger.debug("Rate limit lifted. Resuming operations.")
         self._event.set()
 
 
@@ -84,5 +91,6 @@ def get_rate_limiter(api_token: str) -> RateLimiter:
     key = (api_token, loop)
     with _registry_lock:
         if key not in _rate_limiters:
+            logger.debug("Creating new RateLimiter instance for current event loop.")
             _rate_limiters[key] = RateLimiter()
         return _rate_limiters[key]

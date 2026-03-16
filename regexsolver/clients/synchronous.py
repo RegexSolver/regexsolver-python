@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import threading
 import weakref
 from typing import List, Optional, Union
@@ -6,6 +7,8 @@ from typing import List, Optional, Union
 from regexsolver.clients.asynchronous import AsyncRegexSolverClient
 from regexsolver.models.response_format import ResponseFormat
 from regexsolver.models.term import Term
+
+logger = logging.getLogger(__name__)
 
 # Global state for the shared background event loop
 _SHARED_LOOP: Optional[asyncio.AbstractEventLoop] = None
@@ -17,7 +20,12 @@ def _get_or_create_shared_loop() -> asyncio.AbstractEventLoop:
     """Retrieves the shared global event loop, creating and starting it if necessary."""
     global _SHARED_LOOP, _SHARED_THREAD
     with _SHARED_LOCK:
-        if _SHARED_LOOP is None or _SHARED_THREAD is None or _SHARED_THREAD.is_alive():
+        if (
+            _SHARED_LOOP is None
+            or _SHARED_THREAD is None
+            or not _SHARED_THREAD.is_alive()
+        ):
+            logger.debug("Starting shared RegexSolver background event loop thread.")
             _SHARED_LOOP = asyncio.new_event_loop()
             _SHARED_THREAD = threading.Thread(
                 target=_SHARED_LOOP.run_forever,
@@ -36,6 +44,7 @@ class RegexSolverClient:
     """
 
     def __init__(self, api_token: str, base_url="https://api.regexsolver.com/v1"):
+        logger.debug("Initializing RegexSolverClient.")
         self._loop = _get_or_create_shared_loop()
         self._aio = AsyncRegexSolverClient(api_token, base_url)
 
@@ -50,6 +59,7 @@ class RegexSolverClient:
     ):
         """Finalizer callback to safely close the async client in the background loop."""
         if loop.is_running():
+            logger.debug("Closing RegexSolverClient.")
             asyncio.run_coroutine_threadsafe(aio_client.aclose(), loop)
 
     def _run_sync(self, coro):
@@ -65,6 +75,7 @@ class RegexSolverClient:
         The shared background thread remains running for other client instances.
         """
         if self._finalizer.detach():
+            logger.debug("Closing RegexSolverClient.")
             self._run_sync(self._aio.aclose())
 
     def __enter__(self):
