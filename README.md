@@ -28,8 +28,9 @@ client = RegexSolverClient("YOUR_API_TOKEN")
 term1 = Term.regex(r"(abc|de|fg){2,}")
 term2 = Term.regex(r"de.*")
 
-is_subset = client.subset(term1, term2)
-print(f"Is subset? {is_subset}")
+intersection = client.intersection(term1, term2)
+pattern = client.get_pattern(intersection)
+print(pattern)  # de(abc|de|fg)+
 ```
 
 ### Asynchronous Usage
@@ -37,18 +38,15 @@ print(f"Is subset? {is_subset}")
 For high-performance applications, use the asynchronous client.
 
 ```python
-import asyncio
-from regexsolver import AsyncRegexSolverClient, Term
-
-client = AsyncRegexSolverClient("YOUR_API_TOKEN")
-
 async def main():
-    term1 = Term.regex(r"(abc|de|fg){2,}")
-    term2 = Term.regex(r"de.*")
+    async with AsyncRegexSolverClient("YOUR_API_TOKEN") as client:
+        term1 = Term.regex(r"(abc|de|fg){2,}")
+        term2 = Term.regex(r"de.*")
 
-    intersection = await client.intersection(term1, term2)
-    pattern = await client.get_pattern(intersection)
-    print(pattern) # (abc|de|fg){2,}&de.*
+        intersection = await client.intersection(term1, term2)
+        pattern = await client.get_pattern(intersection)
+        print(pattern)  # de(abc|de|fg)+
+
 
 asyncio.run(main())
 ```
