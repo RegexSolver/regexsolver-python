@@ -56,8 +56,8 @@ class TimeoutExceededError(BadRequestError):
     pass
 
 
-class TooManyStringsToGenerateError(BadRequestError):
-    """Raised when the requested number of strings to generate exceeds the maximum allowed."""
+class InvalidNumberOfStringsToGenerate(BadRequestError):
+    """Raised when the requested number of strings to generate is below the minimum or exceeds the maximum allowed."""
 
     pass
 

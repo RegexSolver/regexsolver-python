@@ -10,6 +10,7 @@ from regexsolver.exceptions import (
     ForbiddenError,
     InternalServerError,
     InvalidJsonError,
+    InvalidNumberOfStringsToGenerate,
     InvalidTokenError,
     MissingOrMalformedTokenError,
     NotFoundError,
@@ -17,7 +18,6 @@ from regexsolver.exceptions import (
     TimeoutExceededError,
     TimeoutTooLargeError,
     TooManyRequestsError,
-    TooManyStringsToGenerateError,
     TooManyTermsError,
     UnauthorizedError,
 )
@@ -155,8 +155,8 @@ class AsyncRegexSolverClient:
                         raise TimeoutExceededError(
                             error_msg, status_code=e.status, body=e.body
                         ) from None
-                    elif error_code == "TooManyStringsToGenerate":
-                        raise TooManyStringsToGenerateError(
+                    elif error_code == "InvalidNumberOfStringsToGenerate":
+                        raise InvalidNumberOfStringsToGenerate(
                             error_msg, status_code=e.status, body=e.body
                         ) from None
                     raise BadRequestError(

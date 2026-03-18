@@ -19,6 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictInt
 from typing import Any, ClassVar, Dict, List, Optional
+from typing_extensions import Annotated
 from regexsolver.generated.models.request_options import RequestOptions
 from regexsolver.generated.models.term import Term
 from typing import Optional, Set
@@ -29,7 +30,7 @@ class GenerateStringsRequest(BaseModel):
     Request to generate up to 'count' distinct strings matched by 'term', skipping the first 'offset' strings.
     """ # noqa: E501
     term: Term = Field(description="Source term to generate strings from.")
-    count: StrictInt = Field(description="Maximum number of unique strings to return.")
+    count: Annotated[int, Field(le=100, strict=True, ge=1)] = Field(description="Maximum number of unique strings to return.")
     offset: StrictInt = Field(description="Number of matched strings to skip before starting to collect the results. Used for pagination.")
     options: Optional[RequestOptions] = None
     __properties: ClassVar[List[str]] = ["term", "count", "offset", "options"]
