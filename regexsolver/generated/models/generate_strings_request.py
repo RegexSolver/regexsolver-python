@@ -26,12 +26,13 @@ from typing_extensions import Self
 
 class GenerateStringsRequest(BaseModel):
     """
-    Request to generate up to 'count' distinct strings matched by 'term'.
+    Request to generate up to 'count' distinct strings matched by 'term', skipping the first 'offset' strings.
     """ # noqa: E501
-    term: Term = Field(description="Source term to sample from.")
+    term: Term = Field(description="Source term to generate strings from.")
     count: StrictInt = Field(description="Maximum number of unique strings to return.")
+    offset: StrictInt = Field(description="Number of matched strings to skip before starting to collect the results. Used for pagination.")
     options: Optional[RequestOptions] = None
-    __properties: ClassVar[List[str]] = ["term", "count", "options"]
+    __properties: ClassVar[List[str]] = ["term", "count", "offset", "options"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -92,6 +93,7 @@ class GenerateStringsRequest(BaseModel):
         _obj = cls.model_validate({
             "term": Term.from_dict(obj["term"]) if obj.get("term") is not None else None,
             "count": obj.get("count"),
+            "offset": obj.get("offset"),
             "options": RequestOptions.from_dict(obj["options"]) if obj.get("options") is not None else None
         })
         return _obj

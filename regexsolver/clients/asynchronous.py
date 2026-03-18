@@ -98,25 +98,24 @@ class AsyncRegexSolverClient:
 
     # --- HELPER ---
     async def _execute_with_retry(self, api_method, **kwargs):
-        max_retries = 5
-        retries = 0
+        retried = False
         while True:
             await self._rate_limiter.wait()
             try:
                 return await api_method(**kwargs)
             except ApiException as e:
                 if e.status == 429:
-                    retries += 1
-                    if retries > max_retries:
+                    if retried:
                         logger.error("Max retries exceeded for 429 Too Many Requests.")
                         raise TooManyRequestsError(
                             "Max retries exceeded for 429 Too Many Requests.",
                             status_code=429,
                         )
+                    retried = True
                     headers = e.headers or {}
                     retry_after = float(headers.get("Retry-After", 1))
                     logger.debug(
-                        f"429 Too Many Requests hit (Attempt {retries}/{max_retries}). "
+                        "429 Too Many Requests hit. "
                         f"Triggering rate limiter for {retry_after} seconds."
                     )
                     await self._rate_limiter.trigger(retry_after)
@@ -580,13 +579,18 @@ class AsyncRegexSolverClient:
 
     # --- GENERATE ---
     async def generate_strings(
-        self, term: Term, count: int, execution_timeout: Optional[int] = None
+        self,
+        term: Term,
+        count: int,
+        offset: int,
+        execution_timeout: Optional[int] = None,
     ) -> List[str]:
-        """Generates up to `count` unique strings matched by the term.
+        """Generates up to `count` distinct strings matched by 'term', skipping the first 'offset' strings.
 
         Args:
             term: The term to sample generated strings from.
             count: The maximum number of unique strings to return.
+            offset: Number of matched strings to skip before starting to collect the results. Used for pagination.
             execution_timeout: Timeout in milliseconds for the operation.
 
         Returns:
@@ -595,6 +599,7 @@ class AsyncRegexSolverClient:
         request = GenerateStringsRequest(
             term=term._api_model,
             count=count,
+            offset=offset,
             options=self._build_options(execution_timeout),
         )
         response = await self._execute_with_retry(
