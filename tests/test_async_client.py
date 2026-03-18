@@ -158,7 +158,7 @@ async def test_error_handling_timeout_exceeded(async_client):
 
 
 @pytest.mark.asyncio
-async def test_error_handling_too_many_strings_to_generate(async_client):
+async def test_error_handling_invalid_number_of_strings_to_generate(async_client):
     error_400 = ApiException(status=400)
     error_400.body = '{"success": false, "error": "Too many strings", "errorCode": "InvalidNumberOfStringsToGenerate"}'
     async_client._generate_api.strings.side_effect = error_400
