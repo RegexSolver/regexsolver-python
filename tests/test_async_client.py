@@ -373,7 +373,7 @@ async def test_repeat(async_client):
 async def test_generate_strings(async_client):
     term = Term.regex("a*")
     mock_response = MagicMock()
-    mock_response.data.value = ["", "a", "aa"]
+    mock_response.data.strings.value = ["", "a", "aa"]
     async_client._generate_api.strings.return_value = mock_response
     result = await async_client.generate_strings(term, 3, 0)
     assert result == ["", "a", "aa"]

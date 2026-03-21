@@ -581,28 +581,41 @@ class AsyncRegexSolverClient:
     async def generate_strings(
         self,
         term: Term,
-        count: int,
+        limit: int,
         offset: int,
         execution_timeout: Optional[int] = None,
     ) -> List[str]:
-        """Generates up to `count` distinct strings matched by 'term', skipping the first 'offset' strings.
+        """Generates up to `limit` distinct strings matched by 'term', skipping the first 'offset' strings.
 
         Args:
             term: The term to sample generated strings from.
-            count: The maximum number of unique strings to return.
+            limit: The maximum number of unique strings to return.
             offset: Number of matched strings to skip before starting to collect the results. Used for pagination.
             execution_timeout: Timeout in milliseconds for the operation.
 
         Returns:
             List[str]: A list of strings that match the term.
         """
+
+        term_to_use = term._api_model
+        return_stable_term = False
+        if term._stable_term is not None:
+            term_to_use = term._stable_term
+        else:
+            return_stable_term = True
+
         request = GenerateStringsRequest(
-            term=term._api_model,
-            count=count,
+            term=term_to_use,
+            limit=limit,
             offset=offset,
+            returnStableTerm=return_stable_term,
             options=self._build_options(execution_timeout),
         )
         response = await self._execute_with_retry(
             self._generate_api.strings, generate_strings_request=request
         )
-        return response.data.value
+
+        if response.data.term is not None:
+            term._stable_term = response.data.term
+
+        return response.data.strings.value

@@ -21,6 +21,7 @@ regexsolver/generated/models/empty200_response.py
 regexsolver/generated/models/error_response.py
 regexsolver/generated/models/execution_options.py
 regexsolver/generated/models/generate_strings_request.py
+regexsolver/generated/models/generate_strings_response.py
 regexsolver/generated/models/length.py
 regexsolver/generated/models/length200_response.py
 regexsolver/generated/models/multi_terms_request.py

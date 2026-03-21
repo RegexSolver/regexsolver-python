@@ -31,6 +31,7 @@ class Term:
         self._empty_string: Optional[bool] = None
         self._total: Optional[bool] = None
         self._pattern: Optional[str] = None
+        self._stable_term: Optional[GeneratedTerm] = None
         self._dot: Optional[str] = None
         self._compiled_regex: Optional[Pattern] = None
 

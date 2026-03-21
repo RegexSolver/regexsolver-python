@@ -17,7 +17,7 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictInt
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
 from regexsolver.generated.models.request_options import RequestOptions
@@ -27,13 +27,14 @@ from typing_extensions import Self
 
 class GenerateStringsRequest(BaseModel):
     """
-    Request to generate up to 'count' distinct strings matched by 'term', skipping the first 'offset' strings.
+    Request to generate up to 'limit' distinct strings matched by 'term', skipping the first 'offset' strings.
     """ # noqa: E501
     term: Term = Field(description="Source term to generate strings from.")
-    count: Annotated[int, Field(le=100, strict=True, ge=1)] = Field(description="Maximum number of unique strings to return.")
+    limit: Annotated[int, Field(le=100, strict=True, ge=1)] = Field(description="Maximum number of unique strings to return.")
     offset: StrictInt = Field(description="Number of matched strings to skip before starting to collect the results. Used for pagination.")
+    return_stable_term: Optional[StrictBool] = Field(default=False, description="If set to true, a stable term is returned. This term can be reused in subsequent calls to guarantee no strings are repeated. If the provided term is already stable, it will not be returned.", alias="returnStableTerm")
     options: Optional[RequestOptions] = None
-    __properties: ClassVar[List[str]] = ["term", "count", "offset", "options"]
+    __properties: ClassVar[List[str]] = ["term", "limit", "offset", "returnStableTerm", "options"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -93,8 +94,9 @@ class GenerateStringsRequest(BaseModel):
 
         _obj = cls.model_validate({
             "term": Term.from_dict(obj["term"]) if obj.get("term") is not None else None,
-            "count": obj.get("count"),
+            "limit": obj.get("limit"),
             "offset": obj.get("offset"),
+            "returnStableTerm": obj.get("returnStableTerm") if obj.get("returnStableTerm") is not None else False,
             "options": RequestOptions.from_dict(obj["options"]) if obj.get("options") is not None else None
         })
         return _obj
