@@ -340,15 +340,15 @@ class RegexSolverClient:
     def generate_strings(
         self,
         term: Term,
-        count: int,
+        limit: int,
         offset: int,
         execution_timeout: Optional[int] = None,
     ) -> List[str]:
-        """Generates up to `count` distinct strings matched by 'term', skipping the first 'offset' strings.
+        """Generates up to `limit` distinct strings matched by 'term', skipping the first 'offset' strings.
 
         Args:
             term: The term to sample generated strings from.
-            count: The maximum number of unique strings to return.
+            limit: The maximum number of unique strings to return.
             offset: Number of matched strings to skip before starting to collect the results. Used for pagination.
             execution_timeout: Timeout in milliseconds for the operation.
 
@@ -356,5 +356,5 @@ class RegexSolverClient:
             List[str]: A list of strings that match the term.
         """
         return self._run_sync(
-            self._aio.generate_strings(term, count, offset, execution_timeout)
+            self._aio.generate_strings(term, limit, offset, execution_timeout)
         )
