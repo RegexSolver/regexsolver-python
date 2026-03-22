@@ -40,3 +40,17 @@ def test_sync_client_union():
         client._aio.union.assert_called_once_with(
             term1, term2, response_format=None, execution_timeout=None
         )
+
+
+def test_sync_client_complement():
+    with RegexSolverClient(api_token="test-token") as client:
+        mock_result_term = Term.regex("[^a].*")
+        client._aio.complement = AsyncMock(return_value=mock_result_term)
+
+        term = Term.regex(".*a.*")
+        result = client.complement(term)
+
+        assert result == mock_result_term
+        client._aio.complement.assert_called_once_with(
+            term, response_format=None, execution_timeout=None
+        )

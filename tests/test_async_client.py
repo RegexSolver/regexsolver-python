@@ -370,6 +370,17 @@ async def test_repeat(async_client):
 
 
 @pytest.mark.asyncio
+async def test_complement(async_client):
+    term = Term.regex(".*a.*")
+    mock_response = MagicMock()
+    mock_response.data.actual_instance.type = "regex"
+    mock_response.data.actual_instance.value = "[^a].*"
+    async_client._compute_api.complement.return_value = mock_response
+    result = await async_client.complement(term)
+    assert result.value == "[^a].*"
+
+
+@pytest.mark.asyncio
 async def test_generate_strings(async_client):
     term = Term.regex("a*")
     mock_response = MagicMock()

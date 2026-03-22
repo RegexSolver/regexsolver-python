@@ -336,6 +336,30 @@ class RegexSolverClient:
             )
         )
 
+    def complement(
+        self,
+        term: Term,
+        response_format: Optional[Union[ResponseFormat, str]] = None,
+        execution_timeout: Optional[int] = None,
+    ) -> Term:
+        """Computes the complement of the given term.
+
+        Args:
+            term: The term to complement.
+            response_format: The return format of the term (any, regex or fair).
+            execution_timeout: Timeout in milliseconds for the operation.
+
+        Returns:
+            Term: The complemented term.
+        """
+        return self._run_sync(
+            self._aio.complement(
+                term,
+                response_format=response_format,
+                execution_timeout=execution_timeout,
+            )
+        )
+
     # --- GENERATE ---
     def generate_strings(
         self,

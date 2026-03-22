@@ -577,6 +577,31 @@ class AsyncRegexSolverClient:
         )
         return Term(response.data)
 
+    async def complement(
+        self,
+        term: Term,
+        response_format: Optional[Union[ResponseFormat, str]] = None,
+        execution_timeout: Optional[int] = None,
+    ) -> Term:
+        """Computes the complement of the given term.
+
+        Args:
+            term: The term to complement.
+            response_format: The return format of the term (any, regex or fair).
+            execution_timeout: Timeout in milliseconds for the operation.
+
+        Returns:
+            Term: The complemented term.
+        """
+        request = TermRequest(
+            term=term._api_model,
+            options=self._build_options(execution_timeout, response_format),
+        )
+        response = await self._execute_with_retry(
+            self._compute_api.complement, term_request=request
+        )
+        return Term(response.data)
+
     # --- GENERATE ---
     async def generate_strings(
         self,

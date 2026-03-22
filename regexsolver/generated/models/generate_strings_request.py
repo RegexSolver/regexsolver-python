@@ -17,7 +17,7 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt
+from pydantic import BaseModel, ConfigDict, Field, StrictBool
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
 from regexsolver.generated.models.request_options import RequestOptions
@@ -31,7 +31,7 @@ class GenerateStringsRequest(BaseModel):
     """ # noqa: E501
     term: Term = Field(description="Source term to generate strings from.")
     limit: Annotated[int, Field(le=100, strict=True, ge=1)] = Field(description="Maximum number of unique strings to return.")
-    offset: StrictInt = Field(description="Number of matched strings to skip before starting to collect the results. Used for pagination.")
+    offset: Annotated[int, Field(strict=True, ge=0)] = Field(description="Number of matched strings to skip before starting to collect the results. Used for pagination.")
     return_stable_term: Optional[StrictBool] = Field(default=False, description="If set to true, a stable term is returned. This term can be reused in subsequent calls to guarantee no strings are repeated. If the provided term is already stable, it will not be returned.", alias="returnStableTerm")
     options: Optional[RequestOptions] = None
     __properties: ClassVar[List[str]] = ["term", "limit", "offset", "returnStableTerm", "options"]
