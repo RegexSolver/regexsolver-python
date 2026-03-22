@@ -115,32 +115,32 @@ Timeout is best effort. The exact time is not guaranteed.
 
 | Method | Return | Description |
 | -------- | ------- | ------- |
-| `client.equivalent(t1, t2)` | `bool` | `True` if `t1` and `t2` accept exactly the same language. |
-| `client.get_cardinality(t)` | `Cardinality` | Returns the number of possible matched strings. |
-| `client.get_dot(t)` | `str` | Returns a Graphviz DOT representation of the automaton. |
-| `client.get_length(t)` | `Length` | Returns the minimum and maximum length of matched strings. |
-| `client.get_pattern(t)` | `str` | Returns a regular expression pattern for the term. |
-| `client.is_empty(t)` | `bool` | `True` if the term matches no string. |
-| `client.is_empty_string(t)` | `bool` | `True` if the term matches only the empty string. |
-| `client.is_total(t)` | `bool` | `True` if the term matches all possible strings. |
-| `client.subset(t1, t2)` | `bool` | `True` if every string matched by `t1` is also matched by `t2`. |
+| `client.equivalent(term1, term2)` | `bool` | `True` if `term1` and `term2` accept exactly the same language. |
+| `client.get_cardinality(term)` | `Cardinality` | Returns the number of possible matched strings. |
+| `client.get_dot(term)` | `str` | Returns a Graphviz DOT representation of the automaton. |
+| `client.get_length(term)` | `Length` | Returns the minimum and maximum length of matched strings. |
+| `client.get_pattern(term)` | `str` | Returns a regular expression pattern for the term. |
+| `client.is_empty(term)` | `bool` | `True` if the term matches no string. |
+| `client.is_empty_string(term)` | `bool` | `True` if the term matches only the empty string. |
+| `client.is_total(term)` | `bool` | `True` if the term matches all possible strings. |
+| `client.subset(term1, term2)` | `bool` | `True` if every string matched by `term1` is also matched by `term2`. |
 
 ### Compute
 
 | Method | Return | Description |
 | -------- | ------- | ------- |
-| `client.complement(t)` | `Term` | Computes the complement of the given term. |
+| `client.complement(term)` | `Term` | Computes the complement of the given term. |
 | `client.concat(*terms)` | `Term` | Concatenates multiple terms in order. |
-| `client.difference(t1, t2)` | `Term` | Computes the difference `t1 - t2`. |
+| `client.difference(term1, term2)` | `Term` | Computes the difference `term1 - term2`. |
 | `client.intersection(*terms)` | `Term` | Computes the intersection of the given terms. |
-| `client.repeat(t, min, max)` | `Term` | Computes the repetition of the term between `min` and `max` times. |
+| `client.repeat(term, min, max)` | `Term` | Computes the repetition of the term between `min` and `max` times. |
 | `client.union(*terms)` | `Term` | Computes the union of the given terms. |
 
 ### Generate
 
 | Method | Return | Description |
 | -------- | ------- | ------- |
-| `client.generate_strings(t, limit, offset)` | `List[str]` | Generates up to `limit` unique strings matched by `t`, skipping the first `offset` strings. |
+| `client.generate_strings(term, limit, offset)` | `List[str]` | Generates up to `limit` unique strings matched by `term`, skipping the first `offset` strings. |
 
 ## Cross-Language Support
 
