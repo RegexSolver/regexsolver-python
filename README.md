@@ -38,6 +38,9 @@ print(pattern)  # de(abc|de|fg)+
 For high-performance applications, use the asynchronous client.
 
 ```python
+import asyncio
+from regexsolver import AsyncRegexSolverClient, Term
+
 async def main():
     async with AsyncRegexSolverClient("YOUR_API_TOKEN") as client:
         term1 = Term.regex(r"(abc|de|fg){2,}")
@@ -68,8 +71,9 @@ The API can handle terms in two formats:
 - `fair`: FAIR (Fast Automaton Internal Representation), a stable, signed format used internally by the engine
 
 By default, the engine returns whatever the operation produces, with no extra convertion. Override with `response_format`:
-
 ```python
+from regexsolver import ResponseFormat
+
 term1 = Term.regex(r"abcde")
 term2 = Term.regex(r"de")
 
@@ -89,13 +93,15 @@ Regardless of the format, you can always call `get_pattern()` to obtain the rege
 Set a server-side compute timeout in milliseconds with `execution_timeout`:
 
 ```python
+from regexsolver.exceptions import TimeoutExceededError
+
 # Limit the server-side compute time to 100 ms
 try:
     term1 = Term.regex(r".*ab.*c(de|fg).*dab.*c(de|fg).*ab.*c(de|fg).*dab.*c")
     term2 = Term.regex(r".*abc.*")
     
     res = client.difference(term1, term2, execution_timeout=100)
-except TimeoutExceeded as error:
+except TimeoutExceededError as error:
     print(error) # The API returned the following error: The operation took too much time.
 ```
 
@@ -123,6 +129,7 @@ Timeout is best effort. The exact time is not guaranteed.
 
 | Method | Return | Description |
 | -------- | ------- | ------- |
+| `client.complement(t)` | `Term` | Computes the complement of the given term. |
 | `client.concat(*terms)` | `Term` | Concatenates multiple terms in order. |
 | `client.difference(t1, t2)` | `Term` | Computes the difference `t1 - t2`. |
 | `client.intersection(*terms)` | `Term` | Computes the intersection of the given terms. |
@@ -133,7 +140,7 @@ Timeout is best effort. The exact time is not guaranteed.
 
 | Method | Return | Description |
 | -------- | ------- | ------- |
-| `client.generate_strings(t, count)` | `List[str]` | Generates up to `count` unique example strings matched by `t`. |
+| `client.generate_strings(t, limit, offset)` | `List[str]` | Generates up to `limit` unique strings matched by `t`, skipping the first `offset` strings. |
 
 ## Cross-Language Support
 
