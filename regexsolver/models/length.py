@@ -30,3 +30,6 @@ class Length(TermPropertiesMixin):
             return False
         else:
             return None
+
+    def is_infinite(self) -> bool:
+        return self.min is not None and self.max is None

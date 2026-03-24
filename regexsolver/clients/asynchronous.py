@@ -106,11 +106,8 @@ class AsyncRegexSolverClient:
             except ApiException as e:
                 if e.status == 429:
                     if retried:
-                        logger.error("Max retries exceeded for 429 Too Many Requests.")
-                        raise TooManyRequestsError(
-                            "Max retries exceeded for 429 Too Many Requests.",
-                            status_code=429,
-                        )
+                        raise self._map_error(e)
+
                     retried = True
                     headers = e.headers or {}
                     retry_after = float(headers.get("Retry-After", 1))
@@ -120,80 +117,87 @@ class AsyncRegexSolverClient:
                     )
                     await self._rate_limiter.trigger(retry_after)
                     continue
-                error_msg = e.reason
-                error_code = None
-                if e.body:
-                    try:
-                        parsed_error = ErrorResponse.from_json(e.body)
-                        if parsed_error is not None:
-                            error_msg = parsed_error.error
-                            error_code = parsed_error.error_code
-                        else:
-                            error_msg = e.body
-                    except Exception:
-                        error_msg = e.body
-                error_msg = str(error_msg) if error_msg else "Unknown API Error"
-                error_code = str(error_code) if error_code else "UnknownError"
-                logger.error(
-                    f"RegexSolver API request failed with status {e.status}: {error_code}/{error_msg}"
-                )
 
-                if e.status == 400:
-                    if error_code == "InvalidJson":
-                        raise InvalidJsonError(
-                            error_msg, status_code=e.status, body=e.body
-                        ) from None
-                    elif error_code == "TooManyTerms":
-                        raise TooManyTermsError(
-                            error_msg, status_code=e.status, body=e.body
-                        ) from None
-                    elif error_code == "TimeoutTooLarge":
-                        raise TimeoutTooLargeError(
-                            error_msg, status_code=e.status, body=e.body
-                        ) from None
-                    elif error_code == "TimeoutExceeded":
-                        raise TimeoutExceededError(
-                            error_msg, status_code=e.status, body=e.body
-                        ) from None
-                    elif error_code == "InvalidNumberOfStringsToGenerate":
-                        raise InvalidNumberOfStringsToGenerate(
-                            error_msg, status_code=e.status, body=e.body
-                        ) from None
-                    raise BadRequestError(
-                        error_msg, status_code=e.status, body=e.body
-                    ) from None
-                elif e.status == 401:
-                    if error_code == "MissingOrMalformedToken":
-                        raise MissingOrMalformedTokenError(
-                            error_msg, status_code=e.status, body=e.body
-                        ) from None
-                    elif error_code == "InvalidToken":
-                        raise InvalidTokenError(
-                            error_msg, status_code=e.status, body=e.body
-                        ) from None
-                    raise UnauthorizedError(
-                        error_msg, status_code=e.status, body=e.body
-                    ) from None
-                elif e.status == 403:
-                    if error_code == "QuotaExceeded":
-                        raise QuotaExceededError(
-                            error_msg, status_code=e.status, body=e.body
-                        ) from None
-                    raise ForbiddenError(
-                        error_msg, status_code=e.status, body=e.body
-                    ) from None
-                elif e.status == 404:
-                    raise NotFoundError(
-                        error_msg, status_code=e.status, body=e.body
-                    ) from None
-                elif e.status == 500:
-                    raise InternalServerError(
-                        error_msg, status_code=e.status, body=e.body
-                    ) from None
+                raise self._map_error(e)
+
+    def _map_error(self, e: ApiException) -> Exception:
+        status_code = e.status
+        error_msg = e.reason
+        error_code = None
+
+        if e.body:
+            try:
+                parsed_error = ErrorResponse.from_json(e.body)
+                if parsed_error is not None:
+                    error_msg = parsed_error.error
+                    error_code = parsed_error.error_code
                 else:
-                    raise ApiError(
-                        error_msg, status_code=e.status, body=e.body
-                    ) from None
+                    error_msg = e.body
+            except Exception:
+                error_msg = e.body
+
+        error_msg = str(error_msg) if error_msg else "Unknown API Error"
+        error_code = str(error_code) if error_code else "UnknownError"
+
+        logger.error(
+            f"RegexSolver API request failed with status {status_code}: {error_code}/{error_msg}"
+        )
+
+        if status_code == 400:
+            if error_code == "InvalidJson":
+                return InvalidJsonError(error_msg, status_code=status_code, body=e.body)
+            if error_code == "TooManyTerms":
+                return TooManyTermsError(
+                    error_msg, status_code=status_code, body=e.body
+                )
+            if error_code == "TimeoutTooLarge":
+                return TimeoutTooLargeError(
+                    error_msg, status_code=status_code, body=e.body
+                )
+            if error_code == "TimeoutExceeded":
+                return TimeoutExceededError(
+                    error_msg, status_code=status_code, body=e.body
+                )
+            if error_code == "InvalidNumberOfStringsToGenerate":
+                return InvalidNumberOfStringsToGenerate(
+                    error_msg, status_code=status_code, body=e.body
+                )
+            return BadRequestError(error_msg, status_code=status_code, body=e.body)
+
+        elif status_code == 401:
+            if error_code == "MissingOrMalformedToken":
+                return MissingOrMalformedTokenError(
+                    error_msg, status_code=status_code, body=e.body
+                )
+            if error_code == "InvalidToken":
+                return InvalidTokenError(
+                    error_msg, status_code=status_code, body=e.body
+                )
+            return UnauthorizedError(error_msg, status_code=status_code, body=e.body)
+
+        elif status_code == 403:
+            if error_code == "QuotaExceeded":
+                return QuotaExceededError(
+                    error_msg, status_code=status_code, body=e.body
+                )
+            return ForbiddenError(error_msg, status_code=status_code, body=e.body)
+
+        elif status_code == 404:
+            return NotFoundError(error_msg, status_code=status_code, body=e.body)
+
+        elif status_code == 429:
+            msg = (
+                "Max retries exceeded for 429 Too Many Requests."
+                if error_msg == "Unknown API Error"
+                else error_msg
+            )
+            return TooManyRequestsError(msg, status_code=429)
+
+        elif status_code == 500:
+            return InternalServerError(error_msg, status_code=status_code, body=e.body)
+
+        else:
+            return ApiError(error_msg, status_code=status_code, body=e.body)
 
     def _build_options(
         self,
