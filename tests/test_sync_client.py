@@ -54,3 +54,32 @@ def test_sync_client_complement():
         client._aio.complement.assert_called_once_with(
             term, response_format=None, execution_timeout=None
         )
+
+
+def test_sync_client_get_length():
+    with RegexSolverClient(api_token="test-token") as client:
+        from regexsolver.models.length import Length
+
+        client._aio.get_length = AsyncMock(return_value=Length(1, 4))
+        term = Term.regex("(abc)?d")
+        result = client.get_length(term)
+        assert result.min == 1
+        assert result.max == 4
+
+
+def test_sync_client_intersection():
+    with RegexSolverClient(api_token="test-token") as client:
+        mock_result_term = Term.regex("a")
+        client._aio.intersection = AsyncMock(return_value=mock_result_term)
+        t1 = Term.regex("a")
+        t2 = Term.regex("ab")
+        result = client.intersection(t1, t2)
+        assert result == mock_result_term
+
+
+def test_sync_client_generate_strings():
+    with RegexSolverClient(api_token="test-token") as client:
+        client._aio.generate_strings = AsyncMock(return_value=["", "a", "aa"])
+        term = Term.regex("a*")
+        result = client.generate_strings(term, 3, 0)
+        assert result == ["", "a", "aa"]

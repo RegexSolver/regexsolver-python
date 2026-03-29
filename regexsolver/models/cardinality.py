@@ -1,13 +1,37 @@
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, cast
 
+from regexsolver.generated.models import Cardinality as GeneratedCardinality
 from regexsolver.models.term_properties_mixin import TermPropertiesMixin
 
 
 class Cardinality(TermPropertiesMixin):
     """Base class representing the number of unique strings matched by a term."""
 
-    pass
+    @classmethod
+    def from_dto(cls, dto: GeneratedCardinality) -> "Cardinality":
+        """Converts a generated API model into a high-level Cardinality object.
+
+        Args:
+            dto (GeneratedCardinality): The raw model from the generated API.
+
+        Returns:
+            Cardinality: A specialized instance (Integer, BigInteger, or Infinite).
+
+        Raises:
+            ValueError: If the DTO contains an unknown cardinality type.
+        """
+        actual_model = getattr(dto, "actual_instance", dto)
+        c_type = actual_model.type
+
+        if c_type == "infinite":
+            return Infinite()
+        elif c_type == "bigInteger":
+            return BigInteger()
+        elif c_type == "integer":
+            return Integer(actual_model.value)
+        else:
+            raise ValueError(f"Unknown cardinality type: {c_type}")
 
     def __repr__(self) -> str:
         return "<Cardinality>"

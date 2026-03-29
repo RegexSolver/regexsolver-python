@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import weakref
-from typing import List, Optional, Union
+from typing import List, Optional
 
 from regexsolver.clients.rate_limiter import get_rate_limiter
 from regexsolver.exceptions import (
@@ -38,7 +38,7 @@ from regexsolver.generated import (
     TermRequest,
     TwoTermsRequest,
 )
-from regexsolver.models.cardinality import BigInteger, Infinite, Integer
+from regexsolver.models.cardinality import Cardinality, Infinite, Integer
 from regexsolver.models.length import Length
 from regexsolver.models.response_format import ResponseFormat
 from regexsolver.models.term import Term
@@ -202,7 +202,7 @@ class AsyncRegexSolverClient:
     def _build_options(
         self,
         execution_timeout: Optional[int] = None,
-        response_format: Optional[Union[ResponseFormat, str]] = None,
+        response_format: Optional[ResponseFormat] = None,
     ) -> RequestOptions:
         options = RequestOptions(schemaVersion=1)
         if execution_timeout is not None:
@@ -214,7 +214,7 @@ class AsyncRegexSolverClient:
     # --- ANALYZE ---
     async def get_cardinality(
         self, term: Term, execution_timeout: Optional[int] = None
-    ):
+    ) -> Cardinality:
         """Computes how many unique strings the term matches.
 
         Args:
@@ -228,31 +228,19 @@ class AsyncRegexSolverClient:
             return term._cardinality
 
         request = TermRequest(
-            term=term._api_model, options=self._build_options(execution_timeout)
+            term=term.to_dto(), options=self._build_options(execution_timeout)
         )
         response = await self._execute_with_retry(
             self._analyze_api.cardinality, term_request=request
         )
 
-        generated_cardinality = response.data
-        actual_model = getattr(
-            generated_cardinality, "actual_instance", generated_cardinality
-        )
-
-        c_type = actual_model.type
-        if c_type == "infinite":
-            term._cardinality = Infinite()
-        elif c_type == "bigInteger":
-            term._cardinality = BigInteger()
-        elif c_type == "integer":
-            term._cardinality = Integer(actual_model.value)
-        else:
-            raise ValueError(f"Unknown cardinality type: {c_type}")
-
+        term._cardinality = Cardinality.from_dto(response.data)
         term._set_properties_mixin(term._cardinality)
         return term._cardinality
 
-    async def get_length(self, term: Term, execution_timeout: Optional[int] = None):
+    async def get_length(
+        self, term: Term, execution_timeout: Optional[int] = None
+    ) -> Length:
         """Computes the minimum and maximum length of strings matched by the term.
 
         Args:
@@ -266,14 +254,13 @@ class AsyncRegexSolverClient:
             return term._length
 
         request = TermRequest(
-            term=term._api_model, options=self._build_options(execution_timeout)
+            term=term.to_dto(), options=self._build_options(execution_timeout)
         )
         response = await self._execute_with_retry(
             self._analyze_api.length, term_request=request
         )
 
-        generated_length = response.data
-        term._length = Length(min=generated_length.min, max=generated_length.max)
+        term._length = Length.from_dto(response.data)
         term._set_properties_mixin(term._length)
         return term._length
 
@@ -291,7 +278,7 @@ class AsyncRegexSolverClient:
             bool: True if they are entirely equivalent, False otherwise.
         """
         request = TwoTermsRequest(
-            terms=[term1._api_model, term2._api_model],
+            terms=[term1.to_dto(), term2.to_dto()],
             options=self._build_options(execution_timeout),
         )
         response = await self._execute_with_retry(
@@ -316,7 +303,7 @@ class AsyncRegexSolverClient:
             bool: True if every string matched by `term_subset` is also matched by `term_superset`.
         """
         request = TwoTermsRequest(
-            terms=[term_subset._api_model, term_superset._api_model],
+            terms=[term_subset.to_dto(), term_superset.to_dto()],
             options=self._build_options(execution_timeout),
         )
         response = await self._execute_with_retry(
@@ -339,7 +326,7 @@ class AsyncRegexSolverClient:
         if term._empty is not None:
             return term._empty
         request = TermRequest(
-            term=term._api_model, options=self._build_options(execution_timeout)
+            term=term.to_dto(), options=self._build_options(execution_timeout)
         )
         response = await self._execute_with_retry(
             self._analyze_api.empty, term_request=request
@@ -365,7 +352,7 @@ class AsyncRegexSolverClient:
         if term._empty_string is not None:
             return term._empty_string
         request = TermRequest(
-            term=term._api_model, options=self._build_options(execution_timeout)
+            term=term.to_dto(), options=self._build_options(execution_timeout)
         )
         response = await self._execute_with_retry(
             self._analyze_api.empty_string, term_request=request
@@ -391,7 +378,7 @@ class AsyncRegexSolverClient:
         if term._total is not None:
             return term._total
         request = TermRequest(
-            term=term._api_model, options=self._build_options(execution_timeout)
+            term=term.to_dto(), options=self._build_options(execution_timeout)
         )
         response = await self._execute_with_retry(
             self._analyze_api.total, term_request=request
@@ -418,7 +405,7 @@ class AsyncRegexSolverClient:
         if pattern is not None:
             return pattern
         request = TermRequest(
-            term=term._api_model, options=self._build_options(execution_timeout)
+            term=term.to_dto(), options=self._build_options(execution_timeout)
         )
         response = await self._execute_with_retry(
             self._analyze_api.pattern, term_request=request
@@ -439,7 +426,7 @@ class AsyncRegexSolverClient:
         if term._dot is not None:
             return term._dot
         request = TermRequest(
-            term=term._api_model, options=self._build_options(execution_timeout)
+            term=term.to_dto(), options=self._build_options(execution_timeout)
         )
         response = await self._execute_with_retry(
             self._analyze_api.dot, term_request=request
@@ -451,7 +438,7 @@ class AsyncRegexSolverClient:
     async def concat(
         self,
         *terms: Term,
-        response_format: Optional[Union[ResponseFormat, str]] = None,
+        response_format: Optional[ResponseFormat] = None,
         execution_timeout: Optional[int] = None,
     ) -> Term:
         """Concatenates the given terms sequentially.
@@ -465,18 +452,18 @@ class AsyncRegexSolverClient:
             Term: A newly computed concatenated term.
         """
         request = MultiTermsRequest(
-            terms=[t._api_model for t in terms],
+            terms=[t.to_dto() for t in terms],
             options=self._build_options(execution_timeout, response_format),
         )
         response = await self._execute_with_retry(
             self._compute_api.concat, multi_terms_request=request
         )
-        return Term(response.data)
+        return Term.from_dto(response.data)
 
     async def intersection(
         self,
         *terms: Term,
-        response_format: Optional[Union[ResponseFormat, str]] = None,
+        response_format: Optional[ResponseFormat] = None,
         execution_timeout: Optional[int] = None,
     ) -> Term:
         """Computes the intersection of the given terms.
@@ -490,18 +477,18 @@ class AsyncRegexSolverClient:
             Term: A term representing only strings matched by ALL provided terms.
         """
         request = MultiTermsRequest(
-            terms=[t._api_model for t in terms],
+            terms=[t.to_dto() for t in terms],
             options=self._build_options(execution_timeout, response_format),
         )
         response = await self._execute_with_retry(
             self._compute_api.intersection, multi_terms_request=request
         )
-        return Term(response.data)
+        return Term.from_dto(response.data)
 
     async def union(
         self,
         *terms: Term,
-        response_format: Optional[Union[ResponseFormat, str]] = None,
+        response_format: Optional[ResponseFormat] = None,
         execution_timeout: Optional[int] = None,
     ) -> Term:
         """Computes the union of the given terms.
@@ -515,19 +502,19 @@ class AsyncRegexSolverClient:
             Term: A term representing strings matched by ANY of the provided terms.
         """
         request = MultiTermsRequest(
-            terms=[t._api_model for t in terms],
+            terms=[t.to_dto() for t in terms],
             options=self._build_options(execution_timeout, response_format),
         )
         response = await self._execute_with_retry(
             self._compute_api.union, multi_terms_request=request
         )
-        return Term(response.data)
+        return Term.from_dto(response.data)
 
     async def difference(
         self,
         base_term: Term,
         excluded_term: Term,
-        response_format: Optional[Union[ResponseFormat, str]] = None,
+        response_format: Optional[ResponseFormat] = None,
         execution_timeout: Optional[int] = None,
     ) -> Term:
         """Computes the difference between the two provided terms.
@@ -542,20 +529,20 @@ class AsyncRegexSolverClient:
             Term: A computed difference term.
         """
         request = TwoTermsRequest(
-            terms=[base_term._api_model, excluded_term._api_model],
+            terms=[base_term.to_dto(), excluded_term.to_dto()],
             options=self._build_options(execution_timeout, response_format),
         )
         response = await self._execute_with_retry(
             self._compute_api.difference, two_terms_request=request
         )
-        return Term(response.data)
+        return Term.from_dto(response.data)
 
     async def repeat(
         self,
         term: Term,
         min_val: int,
         max_val: Optional[int] = None,
-        response_format: Optional[Union[ResponseFormat, str]] = None,
+        response_format: Optional[ResponseFormat] = None,
         execution_timeout: Optional[int] = None,
     ) -> Term:
         """Repeats a term between a minimum and maximum number of times.
@@ -571,7 +558,7 @@ class AsyncRegexSolverClient:
             Term: A computed repeated term.
         """
         request = RepeatRequest(
-            term=term._api_model,
+            term=term.to_dto(),
             min=min_val,
             max=max_val,
             options=self._build_options(execution_timeout, response_format),
@@ -579,12 +566,12 @@ class AsyncRegexSolverClient:
         response = await self._execute_with_retry(
             self._compute_api.repeat, repeat_request=request
         )
-        return Term(response.data)
+        return Term.from_dto(response.data)
 
     async def complement(
         self,
         term: Term,
-        response_format: Optional[Union[ResponseFormat, str]] = None,
+        response_format: Optional[ResponseFormat] = None,
         execution_timeout: Optional[int] = None,
     ) -> Term:
         """Computes the complement of the given term.
@@ -598,13 +585,13 @@ class AsyncRegexSolverClient:
             Term: The complemented term.
         """
         request = TermRequest(
-            term=term._api_model,
+            term=term.to_dto(),
             options=self._build_options(execution_timeout, response_format),
         )
         response = await self._execute_with_retry(
             self._compute_api.complement, term_request=request
         )
-        return Term(response.data)
+        return Term.from_dto(response.data)
 
     # --- GENERATE ---
     async def generate_strings(
@@ -626,10 +613,10 @@ class AsyncRegexSolverClient:
             List[str]: A list of strings that match the term.
         """
 
-        term_to_use = term._api_model
+        term_to_use = term.to_dto()
         return_stable_term = False
         if term._stable_term is not None:
-            term_to_use = term._stable_term
+            term_to_use = term._stable_term.to_dto()
         else:
             return_stable_term = True
 
@@ -645,6 +632,6 @@ class AsyncRegexSolverClient:
         )
 
         if response.data.term is not None:
-            term._stable_term = response.data.term
+            term._stable_term = Term.from_dto(response.data.term)
 
         return response.data.strings.value

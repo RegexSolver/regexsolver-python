@@ -1,20 +1,45 @@
+import pytest
+
+from regexsolver.generated.models import Cardinality as GeneratedCardinality
+from regexsolver.generated.models import (
+    CardinalityBigInteger,
+    CardinalityInfinite,
+    CardinalityInteger,
+    TermFair,
+    TermRegex,
+)
+from regexsolver.generated.models import Length as GeneratedLength
 from regexsolver.generated.models import Term as GeneratedTerm
-from regexsolver.models.cardinality import BigInteger, Infinite, Integer
+from regexsolver.models.cardinality import BigInteger, Cardinality, Infinite, Integer
 from regexsolver.models.length import Length
-from regexsolver.models.term import Term
+from regexsolver.models.term import FairTerm, RegexTerm, Term
 
 
 def test_term_creation_regex():
     term = Term.regex("abc")
-    assert term.type == "regex"
-    assert term.value == "abc"
-    assert isinstance(term._api_model, GeneratedTerm)
+    assert isinstance(term, RegexTerm)
+    assert term.get_value() == "abc"
+    assert isinstance(term.to_dto(), GeneratedTerm)
 
 
 def test_term_creation_fair():
     term = Term.fair("fair_payload")
-    assert term.type == "fair"
-    assert term.value == "fair_payload"
+    assert isinstance(term, FairTerm)
+    assert term.get_value() == "fair_payload"
+
+
+def test_term_from_dto_regex():
+    gen_term = GeneratedTerm(TermRegex(type="regex", value="abc"))
+    term = Term.from_dto(gen_term)
+    assert isinstance(term, RegexTerm)
+    assert term.get_value() == "abc"
+
+
+def test_term_from_dto_fair():
+    gen_term = GeneratedTerm(TermFair(type="fair", value="payload"))
+    term = Term.from_dto(gen_term)
+    assert isinstance(term, FairTerm)
+    assert term.get_value() == "payload"
 
 
 def test_cardinality_integer():
@@ -24,6 +49,25 @@ def test_cardinality_integer():
     assert c.is_empty_string() is False
     assert c.is_total() is False
     assert repr(c) == "<Cardinality::Integer(10)>"
+
+
+def test_cardinality_from_dto_integer():
+    gen_card = GeneratedCardinality(CardinalityInteger(type="integer", value=10))
+    c = Cardinality.from_dto(gen_card)
+    assert isinstance(c, Integer)
+    assert c.value == 10
+
+
+def test_cardinality_from_dto_big_integer():
+    gen_card = GeneratedCardinality(CardinalityBigInteger(type="bigInteger"))
+    c = Cardinality.from_dto(gen_card)
+    assert isinstance(c, BigInteger)
+
+
+def test_cardinality_from_dto_infinite():
+    gen_card = GeneratedCardinality(CardinalityInfinite(type="infinite"))
+    c = Cardinality.from_dto(gen_card)
+    assert isinstance(c, Infinite)
 
 
 def test_cardinality_integer_zero():
@@ -54,28 +98,35 @@ def test_cardinality_infinite():
 
 
 def test_length():
-    lenght = Length(min=1, max=5)
-    assert lenght.min == 1
-    assert lenght.max == 5
-    assert lenght.is_empty() is False
-    assert lenght.is_empty_string() is False
-    assert lenght.is_total() is False
-    assert repr(lenght) == "<Length: min=1, max=5>"
+    length = Length(min=1, max=5)
+    assert length.min == 1
+    assert length.max == 5
+    assert length.is_empty() is False
+    assert length.is_empty_string() is False
+    assert length.is_total() is False
+    assert repr(length) == "<Length: min=1, max=5>"
+
+
+def test_length_from_dto():
+    gen_len = GeneratedLength(type="length", min=1, max=5)
+    length_obj = Length.from_dto(gen_len)
+    assert length_obj.min == 1
+    assert length_obj.max == 5
 
 
 def test_length_empty():
-    lenght = Length(min=None, max=None)
-    assert lenght.is_empty() is True
+    length = Length(min=None, max=None)
+    assert length.is_empty() is True
 
 
 def test_length_empty_string():
-    lenght = Length(min=0, max=0)
-    assert lenght.is_empty_string() is True
+    length = Length(min=0, max=0)
+    assert length.is_empty_string() is True
 
 
 def test_length_total_candidate():
-    lenght = Length(min=0, max=None)
-    assert lenght.is_total() is None  # Implementation returns None if it COULD be total
+    length = Length(min=0, max=None)
+    assert length.is_total() is None  # Implementation returns None if it COULD be total
 
 
 def test_term_properties_caching():
@@ -130,9 +181,6 @@ def test_term_is_match():
     assert term.is_match("axxb") is False  # anchored (fullmatch)
 
     fair_term = Term.fair("payload")
-    assert fair_term.is_match("abc") is None
-
-
-def test_term_repr():
-    term = Term.regex("abc")
-    assert repr(term) == "<Term(type=regex, value=abc)>"
+    # Matches the new Java-aligned behavior of throwing an exception
+    with pytest.raises(RuntimeError, match="not defined yet"):
+        fair_term.is_match("abc")

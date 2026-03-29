@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
+from regexsolver.generated.models import Length as GeneratedLength
 from regexsolver.models.term_properties_mixin import TermPropertiesMixin
 
 
@@ -15,6 +16,18 @@ class Length(TermPropertiesMixin):
 
     min: Optional[int]
     max: Optional[int]
+
+    @classmethod
+    def from_dto(cls, dto: GeneratedLength) -> "Length":
+        """Converts a generated API model into a high-level Length object.
+
+        Args:
+            dto (GeneratedLength): The raw model from the generated API.
+
+        Returns:
+            Length: A high-level instance representing the min/max limits.
+        """
+        return cls(min=dto.min, max=dto.max)
 
     def __repr__(self) -> str:
         return f"<Length: min={self.min}, max={self.max}>"

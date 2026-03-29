@@ -62,6 +62,20 @@ async def test_get_cardinality_infinite(async_client):
 
 
 @pytest.mark.asyncio
+async def test_get_cardinality_big_integer(async_client):
+    term = Term.regex(".{100}")
+
+    mock_response = MagicMock()
+    mock_response.data.actual_instance.type = "bigInteger"
+    async_client._analyze_api.cardinality.return_value = mock_response
+
+    from regexsolver import BigInteger
+
+    result = await async_client.get_cardinality(term)
+    assert isinstance(result, BigInteger)
+
+
+@pytest.mark.asyncio
 async def test_get_length(async_client):
     term = Term.regex("abc")
 
@@ -101,7 +115,7 @@ async def test_compute_union(async_client):
 
     result = await async_client.union(term1, term2)
     assert isinstance(result, Term)
-    assert result.value == "a|b"
+    assert result.get_value() == "a|b"
 
 
 @pytest.mark.asyncio
@@ -331,7 +345,7 @@ async def test_concat(async_client):
     mock_response.data.actual_instance.value = "ab"
     async_client._compute_api.concat.return_value = mock_response
     result = await async_client.concat(term1, term2)
-    assert result.value == "ab"
+    assert result.get_value() == "ab"
 
 
 @pytest.mark.asyncio
@@ -343,7 +357,7 @@ async def test_intersection(async_client):
     mock_response.data.actual_instance.value = "ab"
     async_client._compute_api.intersection.return_value = mock_response
     result = await async_client.intersection(term1, term2)
-    assert result.value == "ab"
+    assert result.get_value() == "ab"
 
 
 @pytest.mark.asyncio
@@ -355,7 +369,7 @@ async def test_difference(async_client):
     mock_response.data.actual_instance.value = "a"
     async_client._compute_api.difference.return_value = mock_response
     result = await async_client.difference(term1, term2)
-    assert result.value == "a"
+    assert result.get_value() == "a"
 
 
 @pytest.mark.asyncio
@@ -366,7 +380,7 @@ async def test_repeat(async_client):
     mock_response.data.actual_instance.value = "a{2,3}"
     async_client._compute_api.repeat.return_value = mock_response
     result = await async_client.repeat(term, 2, 3)
-    assert result.value == "a{2,3}"
+    assert result.get_value() == "a{2,3}"
 
 
 @pytest.mark.asyncio
@@ -377,7 +391,7 @@ async def test_complement(async_client):
     mock_response.data.actual_instance.value = "[^a].*"
     async_client._compute_api.complement.return_value = mock_response
     result = await async_client.complement(term)
-    assert result.value == "[^a].*"
+    assert result.get_value() == "[^a].*"
 
 
 @pytest.mark.asyncio
