@@ -18,7 +18,7 @@ Requirements: **Python >= 3.9**
 
 ### Synchronous Usage
 
-The synchronous client is the easiest way to get started.
+The synchronous client provides a simple, blocking API.
 
 ```python
 from regexsolver import RegexSolverClient, Term
@@ -35,7 +35,7 @@ print(pattern)  # de(abc|de|fg)+
 
 ### Asynchronous Usage
 
-For high-performance applications, use the asynchronous client.
+For non-blocking applications, use the asynchronous client.
 
 ```python
 import asyncio
