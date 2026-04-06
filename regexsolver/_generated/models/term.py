@@ -17,27 +17,24 @@ import json
 import pprint
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, ValidationError, field_validator
 from typing import Any, List, Optional
-from regexsolver.generated.models.cardinality_big_integer import CardinalityBigInteger
-from regexsolver.generated.models.cardinality_infinite import CardinalityInfinite
-from regexsolver.generated.models.cardinality_integer import CardinalityInteger
+from regexsolver._generated.models.term_fair import TermFair
+from regexsolver._generated.models.term_regex import TermRegex
 from pydantic import StrictStr, Field
 from typing import Union, List, Set, Optional, Dict
 from typing_extensions import Literal, Self
 
-CARDINALITY_ONE_OF_SCHEMAS = ["CardinalityBigInteger", "CardinalityInfinite", "CardinalityInteger"]
+TERM_ONE_OF_SCHEMAS = ["TermFair", "TermRegex"]
 
-class Cardinality(BaseModel):
+class Term(BaseModel):
     """
-    Number of unique strings matched by a term.
+    Serialized term.
     """
-    # data type: CardinalityInfinite
-    oneof_schema_1_validator: Optional[CardinalityInfinite] = None
-    # data type: CardinalityBigInteger
-    oneof_schema_2_validator: Optional[CardinalityBigInteger] = None
-    # data type: CardinalityInteger
-    oneof_schema_3_validator: Optional[CardinalityInteger] = None
-    actual_instance: Optional[Union[CardinalityBigInteger, CardinalityInfinite, CardinalityInteger]] = None
-    one_of_schemas: Set[str] = { "CardinalityBigInteger", "CardinalityInfinite", "CardinalityInteger" }
+    # data type: TermRegex
+    oneof_schema_1_validator: Optional[TermRegex] = None
+    # data type: TermFair
+    oneof_schema_2_validator: Optional[TermFair] = None
+    actual_instance: Optional[Union[TermFair, TermRegex]] = None
+    one_of_schemas: Set[str] = { "TermFair", "TermRegex" }
 
     model_config = ConfigDict(
         validate_assignment=True,
@@ -60,30 +57,25 @@ class Cardinality(BaseModel):
 
     @field_validator('actual_instance')
     def actual_instance_must_validate_oneof(cls, v):
-        instance = Cardinality.model_construct()
+        instance = Term.model_construct()
         error_messages = []
         match = 0
-        # validate data type: CardinalityInfinite
-        if not isinstance(v, CardinalityInfinite):
-            error_messages.append(f"Error! Input type `{type(v)}` is not `CardinalityInfinite`")
+        # validate data type: TermRegex
+        if not isinstance(v, TermRegex):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `TermRegex`")
         else:
             match += 1
-        # validate data type: CardinalityBigInteger
-        if not isinstance(v, CardinalityBigInteger):
-            error_messages.append(f"Error! Input type `{type(v)}` is not `CardinalityBigInteger`")
-        else:
-            match += 1
-        # validate data type: CardinalityInteger
-        if not isinstance(v, CardinalityInteger):
-            error_messages.append(f"Error! Input type `{type(v)}` is not `CardinalityInteger`")
+        # validate data type: TermFair
+        if not isinstance(v, TermFair):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `TermFair`")
         else:
             match += 1
         if match > 1:
             # more than 1 match
-            raise ValueError("Multiple matches found when setting `actual_instance` in Cardinality with oneOf schemas: CardinalityBigInteger, CardinalityInfinite, CardinalityInteger. Details: " + ", ".join(error_messages))
+            raise ValueError("Multiple matches found when setting `actual_instance` in Term with oneOf schemas: TermFair, TermRegex. Details: " + ", ".join(error_messages))
         elif match == 0:
             # no match
-            raise ValueError("No match found when setting `actual_instance` in Cardinality with oneOf schemas: CardinalityBigInteger, CardinalityInfinite, CardinalityInteger. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when setting `actual_instance` in Term with oneOf schemas: TermFair, TermRegex. Details: " + ", ".join(error_messages))
         else:
             return v
 
@@ -98,31 +90,25 @@ class Cardinality(BaseModel):
         error_messages = []
         match = 0
 
-        # deserialize data into CardinalityInfinite
+        # deserialize data into TermRegex
         try:
-            instance.actual_instance = CardinalityInfinite.from_json(json_str)
+            instance.actual_instance = TermRegex.from_json(json_str)
             match += 1
         except (ValidationError, ValueError) as e:
             error_messages.append(str(e))
-        # deserialize data into CardinalityBigInteger
+        # deserialize data into TermFair
         try:
-            instance.actual_instance = CardinalityBigInteger.from_json(json_str)
-            match += 1
-        except (ValidationError, ValueError) as e:
-            error_messages.append(str(e))
-        # deserialize data into CardinalityInteger
-        try:
-            instance.actual_instance = CardinalityInteger.from_json(json_str)
+            instance.actual_instance = TermFair.from_json(json_str)
             match += 1
         except (ValidationError, ValueError) as e:
             error_messages.append(str(e))
 
         if match > 1:
             # more than 1 match
-            raise ValueError("Multiple matches found when deserializing the JSON string into Cardinality with oneOf schemas: CardinalityBigInteger, CardinalityInfinite, CardinalityInteger. Details: " + ", ".join(error_messages))
+            raise ValueError("Multiple matches found when deserializing the JSON string into Term with oneOf schemas: TermFair, TermRegex. Details: " + ", ".join(error_messages))
         elif match == 0:
             # no match
-            raise ValueError("No match found when deserializing the JSON string into Cardinality with oneOf schemas: CardinalityBigInteger, CardinalityInfinite, CardinalityInteger. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when deserializing the JSON string into Term with oneOf schemas: TermFair, TermRegex. Details: " + ", ".join(error_messages))
         else:
             return instance
 
@@ -136,7 +122,7 @@ class Cardinality(BaseModel):
         else:
             return json.dumps(self.actual_instance)
 
-    def to_dict(self) -> Optional[Union[Dict[str, Any], CardinalityBigInteger, CardinalityInfinite, CardinalityInteger]]:
+    def to_dict(self) -> Optional[Union[Dict[str, Any], TermFair, TermRegex]]:
         """Returns the dict representation of the actual instance"""
         if self.actual_instance is None:
             return None

@@ -17,28 +17,21 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Any, ClassVar, Dict, List, Optional
-from regexsolver.generated.models.strings import Strings
-from regexsolver.generated.models.term import Term
+from typing_extensions import Annotated
+from regexsolver._generated.models.request_options import RequestOptions
+from regexsolver._generated.models.term import Term
 from typing import Optional, Set
 from typing_extensions import Self
 
-class GenerateStringsResponse(BaseModel):
+class TwoTermsRequest(BaseModel):
     """
-    Response containing distinct strings generated from the requested 'term'.
+    Request carrying exactly 2 terms.
     """ # noqa: E501
-    type: StrictStr
-    term: Optional[Term] = Field(default=None, description="A stable term to use in subsequent calls to guarantee the uniqueness of generated strings. Omitted if 'returnStableTerm' was false in the request, or if the provided term was already stable.")
-    strings: Strings = Field(description="The generated distinct strings.")
-    __properties: ClassVar[List[str]] = ["type", "term", "strings"]
-
-    @field_validator('type')
-    def type_validate_enum(cls, value):
-        """Validates the enum"""
-        if value not in set(['generatedStrings']):
-            raise ValueError("must be one of enum values ('generatedStrings')")
-        return value
+    terms: Annotated[List[Term], Field(min_length=2, max_length=2)] = Field(description="Exactly 2 terms.")
+    options: Optional[RequestOptions] = None
+    __properties: ClassVar[List[str]] = ["terms", "options"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -58,7 +51,7 @@ class GenerateStringsResponse(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of GenerateStringsResponse from a JSON string"""
+        """Create an instance of TwoTermsRequest from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -79,17 +72,21 @@ class GenerateStringsResponse(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # override the default output from pydantic by calling `to_dict()` of term
-        if self.term:
-            _dict['term'] = self.term.to_dict()
-        # override the default output from pydantic by calling `to_dict()` of strings
-        if self.strings:
-            _dict['strings'] = self.strings.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of each item in terms (list)
+        _items = []
+        if self.terms:
+            for _item_terms in self.terms:
+                if _item_terms:
+                    _items.append(_item_terms.to_dict())
+            _dict['terms'] = _items
+        # override the default output from pydantic by calling `to_dict()` of options
+        if self.options:
+            _dict['options'] = self.options.to_dict()
         return _dict
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of GenerateStringsResponse from a dict"""
+        """Create an instance of TwoTermsRequest from a dict"""
         if obj is None:
             return None
 
@@ -97,9 +94,8 @@ class GenerateStringsResponse(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "type": obj.get("type"),
-            "term": Term.from_dict(obj["term"]) if obj.get("term") is not None else None,
-            "strings": Strings.from_dict(obj["strings"]) if obj.get("strings") is not None else None
+            "terms": [Term.from_dict(_item) for _item in obj["terms"]] if obj.get("terms") is not None else None,
+            "options": RequestOptions.from_dict(obj["options"]) if obj.get("options") is not None else None
         })
         return _obj
 

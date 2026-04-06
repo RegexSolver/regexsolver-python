@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional, cast
 
-from regexsolver.generated.models import Cardinality as GeneratedCardinality
+from regexsolver._generated.models import Cardinality as GeneratedCardinality
 from regexsolver.models.term_properties_mixin import TermPropertiesMixin
 
 

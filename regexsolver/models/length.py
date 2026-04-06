@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from regexsolver.generated.models import Length as GeneratedLength
+from regexsolver._generated.models import Length as GeneratedLength
 from regexsolver.models.term_properties_mixin import TermPropertiesMixin
 
 

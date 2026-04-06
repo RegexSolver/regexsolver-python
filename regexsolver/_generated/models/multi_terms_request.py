@@ -20,16 +20,16 @@ import json
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
-from regexsolver.generated.models.request_options import RequestOptions
-from regexsolver.generated.models.term import Term
+from regexsolver._generated.models.request_options import RequestOptions
+from regexsolver._generated.models.term import Term
 from typing import Optional, Set
 from typing_extensions import Self
 
-class TwoTermsRequest(BaseModel):
+class MultiTermsRequest(BaseModel):
     """
-    Request carrying exactly 2 terms.
+    Request carrying 2 or more terms for n-ary operations.
     """ # noqa: E501
-    terms: Annotated[List[Term], Field(min_length=2, max_length=2)] = Field(description="Exactly 2 terms.")
+    terms: Annotated[List[Term], Field(min_length=2)] = Field(description="Terms to process. Order matters for some operations.")
     options: Optional[RequestOptions] = None
     __properties: ClassVar[List[str]] = ["terms", "options"]
 
@@ -51,7 +51,7 @@ class TwoTermsRequest(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of TwoTermsRequest from a JSON string"""
+        """Create an instance of MultiTermsRequest from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -86,7 +86,7 @@ class TwoTermsRequest(BaseModel):
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of TwoTermsRequest from a dict"""
+        """Create an instance of MultiTermsRequest from a dict"""
         if obj is None:
             return None
 

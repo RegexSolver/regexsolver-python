@@ -15,12 +15,12 @@ from pydantic import validate_call, Field, StrictFloat, StrictStr, StrictInt
 from typing import Any, Dict, List, Optional, Tuple, Union
 from typing_extensions import Annotated
 
-from regexsolver.generated.models.generate_strings_request import GenerateStringsRequest
-from regexsolver.generated.models.strings200_response import Strings200Response
+from regexsolver._generated.models.generate_strings_request import GenerateStringsRequest
+from regexsolver._generated.models.strings200_response import Strings200Response
 
-from regexsolver.generated.api_client import ApiClient, RequestSerialized
-from regexsolver.generated.api_response import ApiResponse
-from regexsolver.generated.rest import RESTResponseType
+from regexsolver._generated.api_client import ApiClient, RequestSerialized
+from regexsolver._generated.api_response import ApiResponse
+from regexsolver._generated.rest import RESTResponseType
 
 
 class GenerateApi:
@@ -55,7 +55,7 @@ class GenerateApi:
     ) -> Strings200Response:
         """Strings
 
-        Generate up to 'count' unique strings matched by the term.
+        Generates up to `limit` distinct strings matched by `term`, skipping the first `offset` strings.
 
         :param generate_strings_request: (required)
         :type generate_strings_request: GenerateStringsRequest
@@ -128,7 +128,7 @@ class GenerateApi:
     ) -> ApiResponse[Strings200Response]:
         """Strings
 
-        Generate up to 'count' unique strings matched by the term.
+        Generates up to `limit` distinct strings matched by `term`, skipping the first `offset` strings.
 
         :param generate_strings_request: (required)
         :type generate_strings_request: GenerateStringsRequest
@@ -201,7 +201,7 @@ class GenerateApi:
     ) -> RESTResponseType:
         """Strings
 
-        Generate up to 'count' unique strings matched by the term.
+        Generates up to `limit` distinct strings matched by `term`, skipping the first `offset` strings.
 
         :param generate_strings_request: (required)
         :type generate_strings_request: GenerateStringsRequest

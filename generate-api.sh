@@ -1,8 +1,8 @@
 #!/bin/bash
 
-SPEC_FILE="../shared/openapi.yaml"
+SPEC_FILE="../m-lab/shared/openapi.yaml"
 OUT_DIR="./"
-PACKAGE_NAME="regexsolver.generated"
+PACKAGE_NAME="regexsolver._generated"
 
 echo "Running openapi-generator-cli..."
 openapi-generator-cli generate \

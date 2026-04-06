@@ -26,11 +26,11 @@ from urllib.parse import quote
 from typing import Tuple, Optional, List, Dict, Union
 from pydantic import SecretStr
 
-from regexsolver.generated.configuration import Configuration
-from regexsolver.generated.api_response import ApiResponse, T as ApiResponseT
-import regexsolver.generated.models
-from regexsolver.generated import rest
-from regexsolver.generated.exceptions import (
+from regexsolver._generated.configuration import Configuration
+from regexsolver._generated.api_response import ApiResponse, T as ApiResponseT
+import regexsolver._generated.models
+from regexsolver._generated import rest
+from regexsolver._generated.exceptions import (
     ApiValueError,
     ApiException,
     BadRequestException,
@@ -458,7 +458,7 @@ class ApiClient:
             if klass in self.NATIVE_TYPES_MAPPING:
                 klass = self.NATIVE_TYPES_MAPPING[klass]
             else:
-                klass = getattr(regexsolver.generated.models, klass)
+                klass = getattr(regexsolver._generated.models, klass)
 
         if klass in self.PRIMITIVE_TYPES:
             return self.__deserialize_primitive(data, klass)

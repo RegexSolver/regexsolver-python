@@ -3,9 +3,9 @@ from abc import ABC, abstractmethod
 from re import Pattern
 from typing import Any, Optional
 
-from regexsolver.generated.models import Term as GeneratedTerm
-from regexsolver.generated.models.term_fair import TermFair
-from regexsolver.generated.models.term_regex import TermRegex
+from regexsolver._generated.models import Term as GeneratedTerm
+from regexsolver._generated.models.term_fair import TermFair
+from regexsolver._generated.models.term_regex import TermRegex
 from regexsolver.models.cardinality import Cardinality
 from regexsolver.models.length import Length
 from regexsolver.models.term_properties_mixin import TermPropertiesMixin

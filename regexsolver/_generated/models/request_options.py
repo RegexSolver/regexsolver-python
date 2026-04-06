@@ -17,19 +17,21 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, StrictBool
-from typing import Any, ClassVar, Dict, List
-from regexsolver.generated.models.string import String
+from pydantic import BaseModel, ConfigDict, Field, StrictInt
+from typing import Any, ClassVar, Dict, List, Optional
+from regexsolver._generated.models.execution_options import ExecutionOptions
+from regexsolver._generated.models.response_options import ResponseOptions
 from typing import Optional, Set
 from typing_extensions import Self
 
-class Dot200Response(BaseModel):
+class RequestOptions(BaseModel):
     """
-    Dot200Response
+    Change how the engine handle the operation.
     """ # noqa: E501
-    success: StrictBool
-    data: String
-    __properties: ClassVar[List[str]] = ["success", "data"]
+    schema_version: StrictInt = Field(description="Client-expected schema version.", alias="schemaVersion")
+    response: Optional[ResponseOptions] = None
+    execution: Optional[ExecutionOptions] = None
+    __properties: ClassVar[List[str]] = ["schemaVersion", "response", "execution"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -49,7 +51,7 @@ class Dot200Response(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of Dot200Response from a JSON string"""
+        """Create an instance of RequestOptions from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -70,14 +72,17 @@ class Dot200Response(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # override the default output from pydantic by calling `to_dict()` of data
-        if self.data:
-            _dict['data'] = self.data.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of response
+        if self.response:
+            _dict['response'] = self.response.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of execution
+        if self.execution:
+            _dict['execution'] = self.execution.to_dict()
         return _dict
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of Dot200Response from a dict"""
+        """Create an instance of RequestOptions from a dict"""
         if obj is None:
             return None
 
@@ -85,8 +90,9 @@ class Dot200Response(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "success": obj.get("success"),
-            "data": String.from_dict(obj["data"]) if obj.get("data") is not None else None
+            "schemaVersion": obj.get("schemaVersion"),
+            "response": ResponseOptions.from_dict(obj["response"]) if obj.get("response") is not None else None,
+            "execution": ExecutionOptions.from_dict(obj["execution"]) if obj.get("execution") is not None else None
         })
         return _obj
 

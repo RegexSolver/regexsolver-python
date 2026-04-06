@@ -21,7 +21,7 @@ from typing import Optional, Union
 import aiohttp
 import aiohttp_retry
 
-from regexsolver.generated.exceptions import ApiException, ApiValueError
+from regexsolver._generated.exceptions import ApiException, ApiValueError
 
 RESTResponseType = aiohttp.ClientResponse
 

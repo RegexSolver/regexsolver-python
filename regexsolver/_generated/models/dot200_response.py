@@ -17,20 +17,19 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict
-from typing import Any, ClassVar, Dict, List, Optional
-from regexsolver.generated.models.request_options import RequestOptions
-from regexsolver.generated.models.term import Term
+from pydantic import BaseModel, ConfigDict, StrictBool
+from typing import Any, ClassVar, Dict, List
+from regexsolver._generated.models.string import String
 from typing import Optional, Set
 from typing_extensions import Self
 
-class TermRequest(BaseModel):
+class Dot200Response(BaseModel):
     """
-    Request a single term.
+    Dot200Response
     """ # noqa: E501
-    term: Term
-    options: Optional[RequestOptions] = None
-    __properties: ClassVar[List[str]] = ["term", "options"]
+    success: StrictBool
+    data: String
+    __properties: ClassVar[List[str]] = ["success", "data"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -50,7 +49,7 @@ class TermRequest(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of TermRequest from a JSON string"""
+        """Create an instance of Dot200Response from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -71,17 +70,14 @@ class TermRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # override the default output from pydantic by calling `to_dict()` of term
-        if self.term:
-            _dict['term'] = self.term.to_dict()
-        # override the default output from pydantic by calling `to_dict()` of options
-        if self.options:
-            _dict['options'] = self.options.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of data
+        if self.data:
+            _dict['data'] = self.data.to_dict()
         return _dict
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of TermRequest from a dict"""
+        """Create an instance of Dot200Response from a dict"""
         if obj is None:
             return None
 
@@ -89,8 +85,8 @@ class TermRequest(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "term": Term.from_dict(obj["term"]) if obj.get("term") is not None else None,
-            "options": RequestOptions.from_dict(obj["options"]) if obj.get("options") is not None else None
+            "success": obj.get("success"),
+            "data": String.from_dict(obj["data"]) if obj.get("data") is not None else None
         })
         return _obj
 

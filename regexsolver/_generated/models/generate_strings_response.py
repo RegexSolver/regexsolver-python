@@ -17,21 +17,28 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictInt
+from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
-from regexsolver.generated.models.execution_options import ExecutionOptions
-from regexsolver.generated.models.response_options import ResponseOptions
+from regexsolver._generated.models.strings import Strings
+from regexsolver._generated.models.term import Term
 from typing import Optional, Set
 from typing_extensions import Self
 
-class RequestOptions(BaseModel):
+class GenerateStringsResponse(BaseModel):
     """
-    Change how the engine handle the operation.
+    Response containing distinct strings generated from the requested 'term'.
     """ # noqa: E501
-    schema_version: StrictInt = Field(description="Client-expected schema version.", alias="schemaVersion")
-    response: Optional[ResponseOptions] = None
-    execution: Optional[ExecutionOptions] = None
-    __properties: ClassVar[List[str]] = ["schemaVersion", "response", "execution"]
+    type: StrictStr
+    term: Optional[Term] = Field(default=None, description="A stable term to use in subsequent calls to guarantee the uniqueness of generated strings. Omitted if 'returnStableTerm' was false in the request, or if the provided term was already stable.")
+    strings: Strings = Field(description="The generated distinct strings.")
+    __properties: ClassVar[List[str]] = ["type", "term", "strings"]
+
+    @field_validator('type')
+    def type_validate_enum(cls, value):
+        """Validates the enum"""
+        if value not in set(['generatedStrings']):
+            raise ValueError("must be one of enum values ('generatedStrings')")
+        return value
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -51,7 +58,7 @@ class RequestOptions(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of RequestOptions from a JSON string"""
+        """Create an instance of GenerateStringsResponse from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -72,17 +79,17 @@ class RequestOptions(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # override the default output from pydantic by calling `to_dict()` of response
-        if self.response:
-            _dict['response'] = self.response.to_dict()
-        # override the default output from pydantic by calling `to_dict()` of execution
-        if self.execution:
-            _dict['execution'] = self.execution.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of term
+        if self.term:
+            _dict['term'] = self.term.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of strings
+        if self.strings:
+            _dict['strings'] = self.strings.to_dict()
         return _dict
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of RequestOptions from a dict"""
+        """Create an instance of GenerateStringsResponse from a dict"""
         if obj is None:
             return None
 
@@ -90,9 +97,9 @@ class RequestOptions(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "schemaVersion": obj.get("schemaVersion"),
-            "response": ResponseOptions.from_dict(obj["response"]) if obj.get("response") is not None else None,
-            "execution": ExecutionOptions.from_dict(obj["execution"]) if obj.get("execution") is not None else None
+            "type": obj.get("type"),
+            "term": Term.from_dict(obj["term"]) if obj.get("term") is not None else None,
+            "strings": Strings.from_dict(obj["strings"]) if obj.get("strings") is not None else None
         })
         return _obj
 

@@ -109,38 +109,38 @@ Timeout is best effort. The exact time is not guaranteed.
 
 ## API Overview
 
-`RegexSolverClient` and `AsyncRegexSolverClient` exposes the following methods.
+`RegexSolverClient` and `AsyncRegexSolverClient` exposes the following methods. All methods accept optional keyword arguments `response_format` and `execution_timeout`.
 
 ### Analyze
 
 | Method | Return | Description |
 | -------- | ------- | ------- |
-| `client.equivalent(term1, term2)` | `bool` | `True` if `term1` and `term2` accept exactly the same language. |
-| `client.get_cardinality(term)` | `Cardinality` | Returns the number of possible matched strings. |
-| `client.get_dot(term)` | `str` | Returns a Graphviz DOT representation of the automaton. |
-| `client.get_length(term)` | `Length` | Returns the minimum and maximum length of matched strings. |
-| `client.get_pattern(term)` | `str` | Returns a regular expression pattern for the term. |
-| `client.is_empty(term)` | `bool` | `True` if the term matches no string. |
-| `client.is_empty_string(term)` | `bool` | `True` if the term matches only the empty string. |
-| `client.is_total(term)` | `bool` | `True` if the term matches all possible strings. |
-| `client.subset(term1, term2)` | `bool` | `True` if every string matched by `term1` is also matched by `term2`. |
+| `client.equivalent(term1, term2, **kwargs)` | `bool` | `True` if `term1` and `term2` accept exactly the same language. |
+| `client.get_cardinality(term, **kwargs)` | `Cardinality` | Returns the number of possible matched strings. |
+| `client.get_dot(term, **kwargs)` | `str` | Returns a Graphviz DOT representation of the automaton. |
+| `client.get_length(term, **kwargs)` | `Length` | Returns the minimum and maximum length of matched strings. |
+| `client.get_pattern(term, **kwargs)` | `str` | Returns a regular expression pattern for the term. |
+| `client.is_empty(term, **kwargs)` | `bool` | `True` if the term matches no string. |
+| `client.is_empty_string(term, **kwargs)` | `bool` | `True` if the term matches only the empty string. |
+| `client.is_total(term, **kwargs)` | `bool` | `True` if the term matches all possible strings. |
+| `client.subset(term1, term2, **kwargs)` | `bool` | `True` if every string matched by `term1` is also matched by `term2`. |
 
 ### Compute
 
 | Method | Return | Description |
 | -------- | ------- | ------- |
-| `client.complement(term)` | `Term` | Computes the complement of the given term. |
-| `client.concat(*terms)` | `Term` | Concatenates multiple terms in order. |
-| `client.difference(term1, term2)` | `Term` | Computes the difference `term1 - term2`. |
-| `client.intersection(*terms)` | `Term` | Computes the intersection of the given terms. |
-| `client.repeat(term, min, max)` | `Term` | Computes the repetition of the term between `min` and `max` times. |
-| `client.union(*terms)` | `Term` | Computes the union of the given terms. |
+| `client.complement(term, **kwargs)` | `Term` | Computes the complement of the given term. |
+| `client.concat(term1, term2, ..., **kwargs)` | `Term` | Concatenates multiple terms in order. |
+| `client.difference(term1, term2, **kwargs)` | `Term` | Computes the difference `term1 - term2`. |
+| `client.intersection(term1, term2, ..., **kwargs)` | `Term` | Computes the intersection of the given terms. |
+| `client.repeat(term, min, max, **kwargs)` | `Term` | Computes the repetition of the term between `min` and `max` times. |
+| `client.union(term1, term2, ..., **kwargs)` | `Term` | Computes the union of the given terms. |
 
 ### Generate
 
 | Method | Return | Description |
 | -------- | ------- | ------- |
-| `client.generate_strings(term, limit, offset)` | `List[str]` | Generates up to `limit` unique strings matched by `term`, skipping the first `offset` strings. |
+| `client.generate_strings(term, limit, offset, **kwargs)` | `List[str]` | Generates up to `limit` unique strings matched by `term`, skipping the first `offset` strings. |
 
 ## Cross-Language Support
 

@@ -19,16 +19,16 @@ import json
 
 from pydantic import BaseModel, ConfigDict, StrictBool
 from typing import Any, ClassVar, Dict, List
-from regexsolver.generated.models.boolean import Boolean
+from regexsolver._generated.models.cardinality import Cardinality
 from typing import Optional, Set
 from typing_extensions import Self
 
-class Empty200Response(BaseModel):
+class Cardinality200Response(BaseModel):
     """
-    Empty200Response
+    Cardinality200Response
     """ # noqa: E501
     success: StrictBool
-    data: Boolean
+    data: Cardinality
     __properties: ClassVar[List[str]] = ["success", "data"]
 
     model_config = ConfigDict(
@@ -49,7 +49,7 @@ class Empty200Response(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of Empty200Response from a JSON string"""
+        """Create an instance of Cardinality200Response from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -77,7 +77,7 @@ class Empty200Response(BaseModel):
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of Empty200Response from a dict"""
+        """Create an instance of Cardinality200Response from a dict"""
         if obj is None:
             return None
 
@@ -86,7 +86,7 @@ class Empty200Response(BaseModel):
 
         _obj = cls.model_validate({
             "success": obj.get("success"),
-            "data": Boolean.from_dict(obj["data"]) if obj.get("data") is not None else None
+            "data": Cardinality.from_dict(obj["data"]) if obj.get("data") is not None else None
         })
         return _obj
 

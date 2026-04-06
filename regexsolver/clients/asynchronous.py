@@ -3,6 +3,23 @@ import logging
 import weakref
 from typing import List, Optional
 
+from regexsolver._generated import (
+    AnalyzeApi,
+    ApiClient,
+    ApiException,
+    ComputeApi,
+    Configuration,
+    ErrorResponse,
+    ExecutionOptions,
+    GenerateApi,
+    GenerateStringsRequest,
+    MultiTermsRequest,
+    RepeatRequest,
+    RequestOptions,
+    ResponseOptions,
+    TermRequest,
+    TwoTermsRequest,
+)
 from regexsolver.clients.rate_limiter import get_rate_limiter
 from regexsolver.exceptions import (
     ApiError,
@@ -20,23 +37,6 @@ from regexsolver.exceptions import (
     TooManyRequestsError,
     TooManyTermsError,
     UnauthorizedError,
-)
-from regexsolver.generated import (
-    AnalyzeApi,
-    ApiClient,
-    ApiException,
-    ComputeApi,
-    Configuration,
-    ErrorResponse,
-    ExecutionOptions,
-    GenerateApi,
-    GenerateStringsRequest,
-    MultiTermsRequest,
-    RepeatRequest,
-    RequestOptions,
-    ResponseOptions,
-    TermRequest,
-    TwoTermsRequest,
 )
 from regexsolver.models.cardinality import Cardinality, Infinite, Integer
 from regexsolver.models.length import Length

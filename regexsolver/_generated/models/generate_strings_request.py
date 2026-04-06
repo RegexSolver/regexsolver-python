@@ -20,8 +20,8 @@ import json
 from pydantic import BaseModel, ConfigDict, Field, StrictBool
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
-from regexsolver.generated.models.request_options import RequestOptions
-from regexsolver.generated.models.term import Term
+from regexsolver._generated.models.request_options import RequestOptions
+from regexsolver._generated.models.term import Term
 from typing import Optional, Set
 from typing_extensions import Self
 
