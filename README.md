@@ -23,7 +23,7 @@ The synchronous client provides a simple, blocking API.
 ```python
 from regexsolver import RegexSolverClient, Term
 
-client = RegexSolverClient("YOUR_API_TOKEN")
+client = RegexSolverClient("REGEXSOLVER_API_TOKEN")
 
 term1 = Term.regex(r"(abc|de|fg){2,}")
 term2 = Term.regex(r"de.*")
@@ -42,7 +42,7 @@ import asyncio
 from regexsolver import AsyncRegexSolverClient, Term
 
 async def main():
-    async with AsyncRegexSolverClient("YOUR_API_TOKEN") as client:
+    async with AsyncRegexSolverClient("REGEXSOLVER_API_TOKEN") as client:
         term1 = Term.regex(r"(abc|de|fg){2,}")
         term2 = Term.regex(r"de.*")
 
