@@ -28,6 +28,8 @@ from regexsolver.exceptions import (
     InternalServerError,
     InvalidJsonError,
     InvalidNumberOfStringsToGenerate,
+    AutomatonTooManyStatesError,
+    RegexSyntaxError,
     InvalidTokenError,
     MissingOrMalformedTokenError,
     NotFoundError,
@@ -162,6 +164,12 @@ class AsyncRegexSolverClient:
                 return InvalidNumberOfStringsToGenerate(
                     error_msg, status_code=status_code, body=e.body
                 )
+            if error_code == "AutomatonTooManyStates":
+                return AutomatonTooManyStatesError(
+                    error_msg, status_code=status_code, body=e.body
+                )
+            if error_code == "RegexSyntaxError":
+                return RegexSyntaxError(error_msg, status_code=status_code, body=e.body)
             return BadRequestError(error_msg, status_code=status_code, body=e.body)
 
         elif status_code == 401:

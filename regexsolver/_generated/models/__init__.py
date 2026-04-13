@@ -23,6 +23,9 @@ from regexsolver._generated.models.concat200_response import Concat200Response
 from regexsolver._generated.models.dot200_response import Dot200Response
 from regexsolver._generated.models.empty200_response import Empty200Response
 from regexsolver._generated.models.error_response import ErrorResponse
+from regexsolver._generated.models.error_response400 import ErrorResponse400
+from regexsolver._generated.models.error_response401 import ErrorResponse401
+from regexsolver._generated.models.error_response403 import ErrorResponse403
 from regexsolver._generated.models.execution_options import ExecutionOptions
 from regexsolver._generated.models.generate_strings_request import GenerateStringsRequest
 from regexsolver._generated.models.generate_strings_response import GenerateStringsResponse

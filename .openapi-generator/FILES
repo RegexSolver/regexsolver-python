@@ -19,6 +19,9 @@ regexsolver/_generated/models/concat200_response.py
 regexsolver/_generated/models/dot200_response.py
 regexsolver/_generated/models/empty200_response.py
 regexsolver/_generated/models/error_response.py
+regexsolver/_generated/models/error_response400.py
+regexsolver/_generated/models/error_response401.py
+regexsolver/_generated/models/error_response403.py
 regexsolver/_generated/models/execution_options.py
 regexsolver/_generated/models/generate_strings_request.py
 regexsolver/_generated/models/generate_strings_response.py

@@ -40,6 +40,9 @@ __all__ = [
     "Dot200Response",
     "Empty200Response",
     "ErrorResponse",
+    "ErrorResponse400",
+    "ErrorResponse401",
+    "ErrorResponse403",
     "ExecutionOptions",
     "GenerateStringsRequest",
     "GenerateStringsResponse",
@@ -86,6 +89,9 @@ from regexsolver._generated.models.concat200_response import Concat200Response a
 from regexsolver._generated.models.dot200_response import Dot200Response as Dot200Response
 from regexsolver._generated.models.empty200_response import Empty200Response as Empty200Response
 from regexsolver._generated.models.error_response import ErrorResponse as ErrorResponse
+from regexsolver._generated.models.error_response400 import ErrorResponse400 as ErrorResponse400
+from regexsolver._generated.models.error_response401 import ErrorResponse401 as ErrorResponse401
+from regexsolver._generated.models.error_response403 import ErrorResponse403 as ErrorResponse403
 from regexsolver._generated.models.execution_options import ExecutionOptions as ExecutionOptions
 from regexsolver._generated.models.generate_strings_request import GenerateStringsRequest as GenerateStringsRequest
 from regexsolver._generated.models.generate_strings_response import GenerateStringsResponse as GenerateStringsResponse

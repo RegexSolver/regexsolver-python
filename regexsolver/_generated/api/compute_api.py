@@ -94,9 +94,9 @@ class ComputeApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "Concat200Response",
-            '400': "ErrorResponse",
-            '401': "ErrorResponse",
-            '403': "ErrorResponse",
+            '400': "ErrorResponse400",
+            '401': "ErrorResponse401",
+            '403': "ErrorResponse403",
             '404': "ErrorResponse",
             '429': "ErrorResponse",
             '500': "ErrorResponse",
@@ -167,9 +167,9 @@ class ComputeApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "Concat200Response",
-            '400': "ErrorResponse",
-            '401': "ErrorResponse",
-            '403': "ErrorResponse",
+            '400': "ErrorResponse400",
+            '401': "ErrorResponse401",
+            '403': "ErrorResponse403",
             '404': "ErrorResponse",
             '429': "ErrorResponse",
             '500': "ErrorResponse",
@@ -240,9 +240,9 @@ class ComputeApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "Concat200Response",
-            '400': "ErrorResponse",
-            '401': "ErrorResponse",
-            '403': "ErrorResponse",
+            '400': "ErrorResponse400",
+            '401': "ErrorResponse401",
+            '403': "ErrorResponse403",
             '404': "ErrorResponse",
             '429': "ErrorResponse",
             '500': "ErrorResponse",
@@ -386,9 +386,9 @@ class ComputeApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "Concat200Response",
-            '400': "ErrorResponse",
-            '401': "ErrorResponse",
-            '403': "ErrorResponse",
+            '400': "ErrorResponse400",
+            '401': "ErrorResponse401",
+            '403': "ErrorResponse403",
             '404': "ErrorResponse",
             '429': "ErrorResponse",
             '500': "ErrorResponse",
@@ -459,9 +459,9 @@ class ComputeApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "Concat200Response",
-            '400': "ErrorResponse",
-            '401': "ErrorResponse",
-            '403': "ErrorResponse",
+            '400': "ErrorResponse400",
+            '401': "ErrorResponse401",
+            '403': "ErrorResponse403",
             '404': "ErrorResponse",
             '429': "ErrorResponse",
             '500': "ErrorResponse",
@@ -532,9 +532,9 @@ class ComputeApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "Concat200Response",
-            '400': "ErrorResponse",
-            '401': "ErrorResponse",
-            '403': "ErrorResponse",
+            '400': "ErrorResponse400",
+            '401': "ErrorResponse401",
+            '403': "ErrorResponse403",
             '404': "ErrorResponse",
             '429': "ErrorResponse",
             '500': "ErrorResponse",
@@ -678,9 +678,9 @@ class ComputeApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "Concat200Response",
-            '400': "ErrorResponse",
-            '401': "ErrorResponse",
-            '403': "ErrorResponse",
+            '400': "ErrorResponse400",
+            '401': "ErrorResponse401",
+            '403': "ErrorResponse403",
             '404': "ErrorResponse",
             '429': "ErrorResponse",
             '500': "ErrorResponse",
@@ -751,9 +751,9 @@ class ComputeApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "Concat200Response",
-            '400': "ErrorResponse",
-            '401': "ErrorResponse",
-            '403': "ErrorResponse",
+            '400': "ErrorResponse400",
+            '401': "ErrorResponse401",
+            '403': "ErrorResponse403",
             '404': "ErrorResponse",
             '429': "ErrorResponse",
             '500': "ErrorResponse",
@@ -824,9 +824,9 @@ class ComputeApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "Concat200Response",
-            '400': "ErrorResponse",
-            '401': "ErrorResponse",
-            '403': "ErrorResponse",
+            '400': "ErrorResponse400",
+            '401': "ErrorResponse401",
+            '403': "ErrorResponse403",
             '404': "ErrorResponse",
             '429': "ErrorResponse",
             '500': "ErrorResponse",
@@ -970,9 +970,9 @@ class ComputeApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "Concat200Response",
-            '400': "ErrorResponse",
-            '401': "ErrorResponse",
-            '403': "ErrorResponse",
+            '400': "ErrorResponse400",
+            '401': "ErrorResponse401",
+            '403': "ErrorResponse403",
             '404': "ErrorResponse",
             '429': "ErrorResponse",
             '500': "ErrorResponse",
@@ -1043,9 +1043,9 @@ class ComputeApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "Concat200Response",
-            '400': "ErrorResponse",
-            '401': "ErrorResponse",
-            '403': "ErrorResponse",
+            '400': "ErrorResponse400",
+            '401': "ErrorResponse401",
+            '403': "ErrorResponse403",
             '404': "ErrorResponse",
             '429': "ErrorResponse",
             '500': "ErrorResponse",
@@ -1116,9 +1116,9 @@ class ComputeApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "Concat200Response",
-            '400': "ErrorResponse",
-            '401': "ErrorResponse",
-            '403': "ErrorResponse",
+            '400': "ErrorResponse400",
+            '401': "ErrorResponse401",
+            '403': "ErrorResponse403",
             '404': "ErrorResponse",
             '429': "ErrorResponse",
             '500': "ErrorResponse",
@@ -1262,9 +1262,9 @@ class ComputeApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "Concat200Response",
-            '400': "ErrorResponse",
-            '401': "ErrorResponse",
-            '403': "ErrorResponse",
+            '400': "ErrorResponse400",
+            '401': "ErrorResponse401",
+            '403': "ErrorResponse403",
             '404': "ErrorResponse",
             '429': "ErrorResponse",
             '500': "ErrorResponse",
@@ -1335,9 +1335,9 @@ class ComputeApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "Concat200Response",
-            '400': "ErrorResponse",
-            '401': "ErrorResponse",
-            '403': "ErrorResponse",
+            '400': "ErrorResponse400",
+            '401': "ErrorResponse401",
+            '403': "ErrorResponse403",
             '404': "ErrorResponse",
             '429': "ErrorResponse",
             '500': "ErrorResponse",
@@ -1408,9 +1408,9 @@ class ComputeApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "Concat200Response",
-            '400': "ErrorResponse",
-            '401': "ErrorResponse",
-            '403': "ErrorResponse",
+            '400': "ErrorResponse400",
+            '401': "ErrorResponse401",
+            '403': "ErrorResponse403",
             '404': "ErrorResponse",
             '429': "ErrorResponse",
             '500': "ErrorResponse",
@@ -1554,9 +1554,9 @@ class ComputeApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "Concat200Response",
-            '400': "ErrorResponse",
-            '401': "ErrorResponse",
-            '403': "ErrorResponse",
+            '400': "ErrorResponse400",
+            '401': "ErrorResponse401",
+            '403': "ErrorResponse403",
             '404': "ErrorResponse",
             '429': "ErrorResponse",
             '500': "ErrorResponse",
@@ -1627,9 +1627,9 @@ class ComputeApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "Concat200Response",
-            '400': "ErrorResponse",
-            '401': "ErrorResponse",
-            '403': "ErrorResponse",
+            '400': "ErrorResponse400",
+            '401': "ErrorResponse401",
+            '403': "ErrorResponse403",
             '404': "ErrorResponse",
             '429': "ErrorResponse",
             '500': "ErrorResponse",
@@ -1700,9 +1700,9 @@ class ComputeApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "Concat200Response",
-            '400': "ErrorResponse",
-            '401': "ErrorResponse",
-            '403': "ErrorResponse",
+            '400': "ErrorResponse400",
+            '401': "ErrorResponse401",
+            '403': "ErrorResponse403",
             '404': "ErrorResponse",
             '429': "ErrorResponse",
             '500': "ErrorResponse",

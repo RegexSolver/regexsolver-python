@@ -62,6 +62,18 @@ class InvalidNumberOfStringsToGenerate(BadRequestError):
     pass
 
 
+class AutomatonTooManyStatesError(BadRequestError):
+    """Raised when the NFA/DFA exceeds the maximum allowed number of states for your current plan."""
+
+    pass
+
+
+class RegexSyntaxError(BadRequestError):
+    """Raised when the provided regular expression has invalid syntax."""
+
+    pass
+
+
 class UnauthorizedError(ApiError):
     """Raised when the API returns a 401 Unauthorized error."""
 

@@ -17,19 +17,29 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
 
-class ErrorResponse(BaseModel):
+class ErrorResponse400(BaseModel):
     """
-    ErrorResponse
+    ErrorResponse400
     """ # noqa: E501
     success: StrictBool
     error: StrictStr = Field(description="Human readable error message.")
-    error_code: Optional[StrictStr] = Field(default=None, description="The error code.", alias="errorCode")
+    error_code: Optional[StrictStr] = Field(default=None, alias="errorCode")
     __properties: ClassVar[List[str]] = ["success", "error", "errorCode"]
+
+    @field_validator('error_code')
+    def error_code_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        if value not in set(['InvalidJson', 'TooManyTerms', 'TimeoutTooLarge', 'TimeoutExceeded', 'InvalidNumberOfStringsToGenerate', 'AutomatonTooManyStates', 'RegexSyntaxError']):
+            raise ValueError("must be one of enum values ('InvalidJson', 'TooManyTerms', 'TimeoutTooLarge', 'TimeoutExceeded', 'InvalidNumberOfStringsToGenerate', 'AutomatonTooManyStates', 'RegexSyntaxError')")
+        return value
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -49,7 +59,7 @@ class ErrorResponse(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of ErrorResponse from a JSON string"""
+        """Create an instance of ErrorResponse400 from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -74,7 +84,7 @@ class ErrorResponse(BaseModel):
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of ErrorResponse from a dict"""
+        """Create an instance of ErrorResponse400 from a dict"""
         if obj is None:
             return None
 
