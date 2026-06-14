@@ -17,27 +17,17 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictBool
 from typing import Any, ClassVar, Dict, List, Optional
-from regexsolver._generated.models.term_fair_metadata import TermFairMetadata
 from typing import Optional, Set
 from typing_extensions import Self
 
-class TermFair(BaseModel):
+class FairResponseOptions(BaseModel):
     """
-    Term encoded as FAIR (Fast Automaton Internal Representation), a stable, signed format used internally by the engine.
+    Options controlling the FAIR output. Only applied when response format is \"fair\".
     """ # noqa: E501
-    type: StrictStr
-    value: StrictStr = Field(description="FAIR payload.")
-    metadata: Optional[TermFairMetadata] = None
-    __properties: ClassVar[List[str]] = ["type", "value", "metadata"]
-
-    @field_validator('type')
-    def type_validate_enum(cls, value):
-        """Validates the enum"""
-        if value not in set(['fair']):
-            raise ValueError("must be one of enum values ('fair')")
-        return value
+    deterministic: Optional[StrictBool] = Field(default=None, description="When true, the returned FAIR is guaranteed to be a deterministic automaton, suitable for consistent pagination with /generate/strings.")
+    __properties: ClassVar[List[str]] = ["deterministic"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -57,7 +47,7 @@ class TermFair(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of TermFair from a JSON string"""
+        """Create an instance of FairResponseOptions from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -69,10 +59,8 @@ class TermFair(BaseModel):
         * `None` is only added to the output dict for nullable fields that
           were set at model initialization. Other fields with value `None`
           are ignored.
-        * OpenAPI `readOnly` fields are excluded.
         """
         excluded_fields: Set[str] = set([
-            "metadata",
         ])
 
         _dict = self.model_dump(
@@ -80,14 +68,11 @@ class TermFair(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # override the default output from pydantic by calling `to_dict()` of metadata
-        if self.metadata:
-            _dict['metadata'] = self.metadata.to_dict()
         return _dict
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of TermFair from a dict"""
+        """Create an instance of FairResponseOptions from a dict"""
         if obj is None:
             return None
 
@@ -95,9 +80,7 @@ class TermFair(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "type": obj.get("type"),
-            "value": obj.get("value"),
-            "metadata": TermFairMetadata.from_dict(obj["metadata"]) if obj.get("metadata") is not None else None
+            "deterministic": obj.get("deterministic")
         })
         return _obj
 

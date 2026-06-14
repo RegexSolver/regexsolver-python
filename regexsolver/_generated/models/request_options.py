@@ -26,7 +26,7 @@ from typing_extensions import Self
 
 class RequestOptions(BaseModel):
     """
-    Change how the engine handle the operation.
+    Change how the engine handles the operation.
     """ # noqa: E501
     schema_version: StrictInt = Field(description="Client-expected schema version.", alias="schemaVersion")
     response: Optional[ResponseOptions] = None

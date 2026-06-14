@@ -10,7 +10,7 @@ from regexsolver import (
     Infinite,
     Integer,
     InvalidJsonError,
-    InvalidNumberOfStringsToGenerate,
+    InvalidNumberOfStringsToGenerateError,
     InvalidTokenError,
     MissingOrMalformedTokenError,
     NotFoundError,
@@ -21,7 +21,7 @@ from regexsolver import (
     TooManyTermsError,
     UnauthorizedError,
 )
-from regexsolver.generated import ApiException
+from regexsolver._generated import ApiException
 
 
 @pytest.fixture
@@ -176,7 +176,7 @@ async def test_error_handling_invalid_number_of_strings_to_generate(async_client
     error_400 = ApiException(status=400)
     error_400.body = '{"success": false, "error": "Too many strings", "errorCode": "InvalidNumberOfStringsToGenerate"}'
     async_client._generate_api.strings.side_effect = error_400
-    with pytest.raises(InvalidNumberOfStringsToGenerate):
+    with pytest.raises(InvalidNumberOfStringsToGenerateError):
         await async_client.generate_strings(Term.regex("abc"), 100, 0)
 
 

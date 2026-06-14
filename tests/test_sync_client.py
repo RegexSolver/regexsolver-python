@@ -38,7 +38,7 @@ def test_sync_client_union():
 
         assert result == mock_result_term
         client._aio.union.assert_called_once_with(
-            term1, term2, response_format=None, execution_timeout=None
+            term1, term2, response_format=None, deterministic=None, execution_timeout=None
         )
 
 
@@ -52,7 +52,7 @@ def test_sync_client_complement():
 
         assert result == mock_result_term
         client._aio.complement.assert_called_once_with(
-            term, response_format=None, execution_timeout=None
+            term, response_format=None, deterministic=None, execution_timeout=None
         )
 
 

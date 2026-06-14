@@ -23,6 +23,7 @@ regexsolver/_generated/models/error_response400.py
 regexsolver/_generated/models/error_response401.py
 regexsolver/_generated/models/error_response403.py
 regexsolver/_generated/models/execution_options.py
+regexsolver/_generated/models/fair_response_options.py
 regexsolver/_generated/models/generate_strings_request.py
 regexsolver/_generated/models/generate_strings_response.py
 regexsolver/_generated/models/length.py
@@ -36,6 +37,7 @@ regexsolver/_generated/models/strings.py
 regexsolver/_generated/models/strings200_response.py
 regexsolver/_generated/models/term.py
 regexsolver/_generated/models/term_fair.py
+regexsolver/_generated/models/term_fair_metadata.py
 regexsolver/_generated/models/term_regex.py
 regexsolver/_generated/models/term_request.py
 regexsolver/_generated/models/two_terms_request.py

@@ -44,6 +44,7 @@ __all__ = [
     "ErrorResponse401",
     "ErrorResponse403",
     "ExecutionOptions",
+    "FairResponseOptions",
     "GenerateStringsRequest",
     "GenerateStringsResponse",
     "Length",
@@ -57,6 +58,7 @@ __all__ = [
     "Strings200Response",
     "Term",
     "TermFair",
+    "TermFairMetadata",
     "TermRegex",
     "TermRequest",
     "TwoTermsRequest",
@@ -93,6 +95,7 @@ from regexsolver._generated.models.error_response400 import ErrorResponse400 as 
 from regexsolver._generated.models.error_response401 import ErrorResponse401 as ErrorResponse401
 from regexsolver._generated.models.error_response403 import ErrorResponse403 as ErrorResponse403
 from regexsolver._generated.models.execution_options import ExecutionOptions as ExecutionOptions
+from regexsolver._generated.models.fair_response_options import FairResponseOptions as FairResponseOptions
 from regexsolver._generated.models.generate_strings_request import GenerateStringsRequest as GenerateStringsRequest
 from regexsolver._generated.models.generate_strings_response import GenerateStringsResponse as GenerateStringsResponse
 from regexsolver._generated.models.length import Length as Length
@@ -106,6 +109,7 @@ from regexsolver._generated.models.strings import Strings as Strings
 from regexsolver._generated.models.strings200_response import Strings200Response as Strings200Response
 from regexsolver._generated.models.term import Term as Term
 from regexsolver._generated.models.term_fair import TermFair as TermFair
+from regexsolver._generated.models.term_fair_metadata import TermFairMetadata as TermFairMetadata
 from regexsolver._generated.models.term_regex import TermRegex as TermRegex
 from regexsolver._generated.models.term_request import TermRequest as TermRequest
 from regexsolver._generated.models.two_terms_request import TwoTermsRequest as TwoTermsRequest

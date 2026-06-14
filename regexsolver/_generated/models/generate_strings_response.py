@@ -18,20 +18,18 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from regexsolver._generated.models.strings import Strings
-from regexsolver._generated.models.term import Term
 from typing import Optional, Set
 from typing_extensions import Self
 
 class GenerateStringsResponse(BaseModel):
     """
-    Response containing distinct strings generated from the requested 'term'.
+    Response containing distinct strings generated from the requested `term`.
     """ # noqa: E501
     type: StrictStr
-    term: Optional[Term] = Field(default=None, description="A stable term to use in subsequent calls to guarantee the uniqueness of generated strings. Omitted if 'returnStableTerm' was false in the request, or if the provided term was already stable.")
     strings: Strings = Field(description="The generated distinct strings.")
-    __properties: ClassVar[List[str]] = ["type", "term", "strings"]
+    __properties: ClassVar[List[str]] = ["type", "strings"]
 
     @field_validator('type')
     def type_validate_enum(cls, value):
@@ -79,9 +77,6 @@ class GenerateStringsResponse(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # override the default output from pydantic by calling `to_dict()` of term
-        if self.term:
-            _dict['term'] = self.term.to_dict()
         # override the default output from pydantic by calling `to_dict()` of strings
         if self.strings:
             _dict['strings'] = self.strings.to_dict()
@@ -98,7 +93,6 @@ class GenerateStringsResponse(BaseModel):
 
         _obj = cls.model_validate({
             "type": obj.get("type"),
-            "term": Term.from_dict(obj["term"]) if obj.get("term") is not None else None,
             "strings": Strings.from_dict(obj["strings"]) if obj.get("strings") is not None else None
         })
         return _obj

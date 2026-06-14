@@ -1,15 +1,16 @@
 import pytest
 
-from regexsolver.generated.models import Cardinality as GeneratedCardinality
-from regexsolver.generated.models import (
+from regexsolver._generated.models import Cardinality as GeneratedCardinality
+from regexsolver._generated.models import (
     CardinalityBigInteger,
     CardinalityInfinite,
     CardinalityInteger,
     TermFair,
     TermRegex,
 )
-from regexsolver.generated.models import Length as GeneratedLength
-from regexsolver.generated.models import Term as GeneratedTerm
+from regexsolver._generated.models import Length as GeneratedLength
+from regexsolver._generated.models import Term as GeneratedTerm
+from regexsolver._generated.models.term_fair_metadata import TermFairMetadata
 from regexsolver.models.cardinality import BigInteger, Cardinality, Infinite, Integer
 from regexsolver.models.length import Length
 from regexsolver.models.term import FairTerm, RegexTerm, Term
@@ -173,14 +174,130 @@ def test_term_serialize_deserialize():
     assert Term.deserialize("unknown=value") is None
 
 
-def test_term_is_match():
+def test_term_matches():
     term = Term.regex("a.b")
-    assert term.is_match("axb") is True
-    assert term.is_match("a\nb") is True  # DOTALL
-    assert term.is_match("ab") is False
-    assert term.is_match("axxb") is False  # anchored (fullmatch)
+    assert term.matches("axb") is True
+    assert term.matches("a\nb") is True  # DOTALL
+    assert term.matches("ab") is False
+    assert term.matches("axxb") is False  # anchored (fullmatch)
 
     fair_term = Term.fair("payload")
     # Matches the new Java-aligned behavior of throwing an exception
     with pytest.raises(RuntimeError, match="not defined yet"):
-        fair_term.is_match("abc")
+        fair_term.matches("abc")
+
+
+# --- FairTerm.is_deterministic ---
+
+
+def test_fair_term_is_deterministic_unknown_by_default():
+    term = Term.fair("payload")
+    assert isinstance(term, FairTerm)
+    assert term.is_deterministic is None
+
+
+def test_fair_term_public_factory_has_no_deterministic_param():
+    with pytest.raises(TypeError):
+        Term.fair("payload", deterministic=True)  # type: ignore[call-arg]
+
+
+def test_from_dto_fair_with_deterministic_true():
+    dto = GeneratedTerm(
+        TermFair(
+            type="fair", value="payload", metadata=TermFairMetadata(deterministic=True)
+        )
+    )
+    term = Term.from_dto(dto)
+    assert isinstance(term, FairTerm)
+    assert term.is_deterministic is True
+
+
+def test_from_dto_fair_with_deterministic_false():
+    dto = GeneratedTerm(
+        TermFair(
+            type="fair", value="payload", metadata=TermFairMetadata(deterministic=False)
+        )
+    )
+    term = Term.from_dto(dto)
+    assert isinstance(term, FairTerm)
+    assert term.is_deterministic is False
+
+
+def test_from_dto_fair_without_metadata():
+    dto = GeneratedTerm(TermFair(type="fair", value="payload"))
+    term = Term.from_dto(dto)
+    assert isinstance(term, FairTerm)
+    assert term.is_deterministic is None
+
+
+# --- metadata is never sent to the server ---
+
+
+def test_fair_term_to_dto_excludes_metadata():
+    # FairTerm.to_dto() always builds a fresh TermFair without metadata —
+    # metadata is never round-tripped back to the server.
+    term = Term.from_dto(
+        GeneratedTerm(
+            TermFair(
+                type="fair",
+                value="payload",
+                metadata=TermFairMetadata(deterministic=True),
+            )
+        )
+    )
+    instance = term.to_dto().actual_instance
+    assert instance is not None
+    dto_dict = instance.to_dict()
+    assert "metadata" not in dto_dict
+    assert dto_dict == {"type": "fair", "value": "payload"}
+
+
+# --- deterministic + response_format validation ---
+
+
+def _make_client():
+    from regexsolver.clients.asynchronous import AsyncRegexSolverClient
+
+    return AsyncRegexSolverClient.__new__(AsyncRegexSolverClient)
+
+
+def test_build_options_deterministic_with_fair_format_ok():
+    from regexsolver.models.response_format import ResponseFormat
+
+    client = _make_client()
+    opts = client._build_options(
+        response_format=ResponseFormat.FAIR, deterministic=True
+    )
+    assert opts.response is not None
+    assert opts.response.fair is not None
+    assert opts.response.fair.deterministic is True
+
+
+def test_build_options_deterministic_without_format_ok():
+    client = _make_client()
+    opts = client._build_options(deterministic=True)
+    assert opts.response is not None
+    assert opts.response.fair is not None
+    assert opts.response.fair.deterministic is True
+
+
+def test_build_options_deterministic_with_regex_format_raises():
+    from regexsolver.models.response_format import ResponseFormat
+
+    client = _make_client()
+    with pytest.raises(ValueError, match="deterministic"):
+        client._build_options(response_format=ResponseFormat.REGEX, deterministic=True)
+
+
+def test_build_options_deterministic_with_any_format_raises():
+    from regexsolver.models.response_format import ResponseFormat
+
+    client = _make_client()
+    with pytest.raises(ValueError, match="deterministic"):
+        client._build_options(response_format=ResponseFormat.ANY, deterministic=True)
+
+
+def test_build_options_deterministic_with_string_regex_raises():
+    client = _make_client()
+    with pytest.raises(ValueError, match="deterministic"):
+        client._build_options(response_format="regex", deterministic=True)

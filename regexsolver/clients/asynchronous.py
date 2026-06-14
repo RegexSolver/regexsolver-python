@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import weakref
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from regexsolver._generated import (
     AnalyzeApi,
@@ -11,6 +11,7 @@ from regexsolver._generated import (
     Configuration,
     ErrorResponse,
     ExecutionOptions,
+    FairResponseOptions,
     GenerateApi,
     GenerateStringsRequest,
     MultiTermsRequest,
@@ -23,17 +24,17 @@ from regexsolver._generated import (
 from regexsolver.clients.rate_limiter import get_rate_limiter
 from regexsolver.exceptions import (
     ApiError,
+    AutomatonTooManyStatesError,
     BadRequestError,
     ForbiddenError,
     InternalServerError,
     InvalidJsonError,
-    InvalidNumberOfStringsToGenerate,
-    AutomatonTooManyStatesError,
-    RegexSyntaxError,
+    InvalidNumberOfStringsToGenerateError,
     InvalidTokenError,
     MissingOrMalformedTokenError,
     NotFoundError,
     QuotaExceededError,
+    RegexSyntaxError,
     TimeoutExceededError,
     TimeoutTooLargeError,
     TooManyRequestsError,
@@ -43,7 +44,7 @@ from regexsolver.exceptions import (
 from regexsolver.models.cardinality import Cardinality, Infinite, Integer
 from regexsolver.models.length import Length
 from regexsolver.models.response_format import ResponseFormat
-from regexsolver.models.term import Term
+from regexsolver.models.term import FairTerm, Term
 
 logger = logging.getLogger(__name__)
 
@@ -161,7 +162,7 @@ class AsyncRegexSolverClient:
                     error_msg, status_code=status_code, body=e.body
                 )
             if error_code == "InvalidNumberOfStringsToGenerate":
-                return InvalidNumberOfStringsToGenerate(
+                return InvalidNumberOfStringsToGenerateError(
                     error_msg, status_code=status_code, body=e.body
                 )
             if error_code == "AutomatonTooManyStates":
@@ -210,13 +211,33 @@ class AsyncRegexSolverClient:
     def _build_options(
         self,
         execution_timeout: Optional[int] = None,
-        response_format: Optional[ResponseFormat] = None,
+        response_format: Optional[Union[ResponseFormat, str]] = None,
+        deterministic: Optional[bool] = None,
     ) -> RequestOptions:
+        if deterministic is not None and response_format is not None:
+            fmt = (
+                ResponseFormat(response_format)
+                if isinstance(response_format, str)
+                else response_format
+            )
+            if fmt != ResponseFormat.FAIR:
+                raise ValueError(
+                    f"deterministic can only be used with response_format=ResponseFormat.FAIR, got {fmt!r}"
+                )
         options = RequestOptions(schemaVersion=1)
         if execution_timeout is not None:
             options.execution = ExecutionOptions(timeout=execution_timeout)
+        response_opts = ResponseOptions()
         if response_format is not None:
-            options.response = ResponseOptions(format=response_format)
+            response_opts.format = str(response_format)
+        if deterministic is not None:
+            response_opts.fair = FairResponseOptions(deterministic=deterministic)
+            if response_format is None:
+                # FairResponseOptions is only applied when the response format is
+                # "fair", so default to it to honor the deterministic request.
+                response_opts.format = str(ResponseFormat.FAIR)
+        if response_format is not None or deterministic is not None:
+            options.response = response_opts
         return options
 
     # --- ANALYZE ---
@@ -381,7 +402,7 @@ class AsyncRegexSolverClient:
             execution_timeout: Timeout in milliseconds for the operation.
 
         Returns:
-            bool: True if the term matches every possible strings.
+            bool: True if the term matches every possible string.
         """
         if term._total is not None:
             return term._total
@@ -395,6 +416,33 @@ class AsyncRegexSolverClient:
         if term._total:
             term._cardinality = Infinite()
             term._length = Length(min=0, max=None)
+        return response.data.value
+
+    async def is_deterministic(
+        self, term: Term, execution_timeout: Optional[int] = None
+    ) -> bool:
+        """Check if the term's automaton is deterministic.
+        Only a deterministic FAIR guarantees consistent string ordering across paginated generate_strings requests; call determinize first if this is false.
+
+        Args:
+            term: The term to analyze.
+            execution_timeout: Timeout in milliseconds for the operation.
+
+        Returns:
+            bool: True if the term's automaton is deterministic.
+        """
+        if not isinstance(term, FairTerm):
+            return False
+
+        if term._deterministic is not None:
+            return term._deterministic
+        request = TermRequest(
+            term=term.to_dto(), options=self._build_options(execution_timeout)
+        )
+        response = await self._execute_with_retry(
+            self._analyze_api.deterministic, term_request=request
+        )
+        term._deterministic = response.data.value
         return response.data.value
 
     async def get_pattern(
@@ -446,7 +494,8 @@ class AsyncRegexSolverClient:
     async def concat(
         self,
         *terms: Term,
-        response_format: Optional[ResponseFormat] = None,
+        response_format: Optional[Union[ResponseFormat, str]] = None,
+        deterministic: Optional[bool] = None,
         execution_timeout: Optional[int] = None,
     ) -> Term:
         """Concatenates the given terms sequentially.
@@ -454,6 +503,9 @@ class AsyncRegexSolverClient:
         Args:
             *terms: A dynamic list of terms to concatenate in order.
             response_format: The return format of the term (any, regex or fair).
+            deterministic: When True, guarantees the returned FAIR encodes a deterministic
+                automaton. Only valid with response_format=ResponseFormat.FAIR or when
+                response_format is unset. Raises ValueError otherwise.
             execution_timeout: Timeout in milliseconds for the operation.
 
         Returns:
@@ -461,7 +513,9 @@ class AsyncRegexSolverClient:
         """
         request = MultiTermsRequest(
             terms=[t.to_dto() for t in terms],
-            options=self._build_options(execution_timeout, response_format),
+            options=self._build_options(
+                execution_timeout, response_format, deterministic
+            ),
         )
         response = await self._execute_with_retry(
             self._compute_api.concat, multi_terms_request=request
@@ -471,7 +525,8 @@ class AsyncRegexSolverClient:
     async def intersection(
         self,
         *terms: Term,
-        response_format: Optional[ResponseFormat] = None,
+        response_format: Optional[Union[ResponseFormat, str]] = None,
+        deterministic: Optional[bool] = None,
         execution_timeout: Optional[int] = None,
     ) -> Term:
         """Computes the intersection of the given terms.
@@ -479,6 +534,9 @@ class AsyncRegexSolverClient:
         Args:
             *terms: A dynamic list of terms to intersect.
             response_format: The return format of the term (any, regex or fair).
+            deterministic: When True, guarantees the returned FAIR encodes a deterministic
+                automaton. Only valid with response_format=ResponseFormat.FAIR or when
+                response_format is unset. Raises ValueError otherwise.
             execution_timeout: Timeout in milliseconds for the operation.
 
         Returns:
@@ -486,7 +544,9 @@ class AsyncRegexSolverClient:
         """
         request = MultiTermsRequest(
             terms=[t.to_dto() for t in terms],
-            options=self._build_options(execution_timeout, response_format),
+            options=self._build_options(
+                execution_timeout, response_format, deterministic
+            ),
         )
         response = await self._execute_with_retry(
             self._compute_api.intersection, multi_terms_request=request
@@ -496,7 +556,8 @@ class AsyncRegexSolverClient:
     async def union(
         self,
         *terms: Term,
-        response_format: Optional[ResponseFormat] = None,
+        response_format: Optional[Union[ResponseFormat, str]] = None,
+        deterministic: Optional[bool] = None,
         execution_timeout: Optional[int] = None,
     ) -> Term:
         """Computes the union of the given terms.
@@ -504,6 +565,9 @@ class AsyncRegexSolverClient:
         Args:
             *terms: A dynamic list of terms to combine.
             response_format: The return format of the term (any, regex or fair).
+            deterministic: When True, guarantees the returned FAIR encodes a deterministic
+                automaton. Only valid with response_format=ResponseFormat.FAIR or when
+                response_format is unset. Raises ValueError otherwise.
             execution_timeout: Timeout in milliseconds for the operation.
 
         Returns:
@@ -511,7 +575,9 @@ class AsyncRegexSolverClient:
         """
         request = MultiTermsRequest(
             terms=[t.to_dto() for t in terms],
-            options=self._build_options(execution_timeout, response_format),
+            options=self._build_options(
+                execution_timeout, response_format, deterministic
+            ),
         )
         response = await self._execute_with_retry(
             self._compute_api.union, multi_terms_request=request
@@ -522,15 +588,19 @@ class AsyncRegexSolverClient:
         self,
         base_term: Term,
         excluded_term: Term,
-        response_format: Optional[ResponseFormat] = None,
+        response_format: Optional[Union[ResponseFormat, str]] = None,
+        deterministic: Optional[bool] = None,
         execution_timeout: Optional[int] = None,
     ) -> Term:
-        """Computes the difference between the two provided terms.
+        """Computes the difference between the two given terms.
 
         Args:
             base_term: The base language term to subtract from.
             excluded_term: The term whose language should be removed from the base.
             response_format: The return format of the term (any, regex or fair).
+            deterministic: When True, guarantees the returned FAIR encodes a deterministic
+                automaton. Only valid with response_format=ResponseFormat.FAIR or when
+                response_format is unset. Raises ValueError otherwise.
             execution_timeout: Timeout in milliseconds for the operation.
 
         Returns:
@@ -538,7 +608,9 @@ class AsyncRegexSolverClient:
         """
         request = TwoTermsRequest(
             terms=[base_term.to_dto(), excluded_term.to_dto()],
-            options=self._build_options(execution_timeout, response_format),
+            options=self._build_options(
+                execution_timeout, response_format, deterministic
+            ),
         )
         response = await self._execute_with_retry(
             self._compute_api.difference, two_terms_request=request
@@ -550,7 +622,8 @@ class AsyncRegexSolverClient:
         term: Term,
         min_val: int,
         max_val: Optional[int] = None,
-        response_format: Optional[ResponseFormat] = None,
+        response_format: Optional[Union[ResponseFormat, str]] = None,
+        deterministic: Optional[bool] = None,
         execution_timeout: Optional[int] = None,
     ) -> Term:
         """Repeats a term between a minimum and maximum number of times.
@@ -560,6 +633,9 @@ class AsyncRegexSolverClient:
             min_val: The inclusive lower bound of repetitions.
             max_val: The inclusive upper bound. If None, repetitions are unbounded.
             response_format: The return format of the term (any, regex or fair).
+            deterministic: When True, guarantees the returned FAIR encodes a deterministic
+                automaton. Only valid with response_format=ResponseFormat.FAIR or when
+                response_format is unset. Raises ValueError otherwise.
             execution_timeout: Timeout in milliseconds for the operation.
 
         Returns:
@@ -569,7 +645,9 @@ class AsyncRegexSolverClient:
             term=term.to_dto(),
             min=min_val,
             max=max_val,
-            options=self._build_options(execution_timeout, response_format),
+            options=self._build_options(
+                execution_timeout, response_format, deterministic
+            ),
         )
         response = await self._execute_with_retry(
             self._compute_api.repeat, repeat_request=request
@@ -579,7 +657,8 @@ class AsyncRegexSolverClient:
     async def complement(
         self,
         term: Term,
-        response_format: Optional[ResponseFormat] = None,
+        response_format: Optional[Union[ResponseFormat, str]] = None,
+        deterministic: Optional[bool] = None,
         execution_timeout: Optional[int] = None,
     ) -> Term:
         """Computes the complement of the given term.
@@ -587,6 +666,9 @@ class AsyncRegexSolverClient:
         Args:
             term: The term to complement.
             response_format: The return format of the term (any, regex or fair).
+            deterministic: When True, guarantees the returned FAIR encodes a deterministic
+                automaton. Only valid with response_format=ResponseFormat.FAIR or when
+                response_format is unset. Raises ValueError otherwise.
             execution_timeout: Timeout in milliseconds for the operation.
 
         Returns:
@@ -594,10 +676,39 @@ class AsyncRegexSolverClient:
         """
         request = TermRequest(
             term=term.to_dto(),
-            options=self._build_options(execution_timeout, response_format),
+            options=self._build_options(
+                execution_timeout, response_format, deterministic
+            ),
         )
         response = await self._execute_with_retry(
             self._compute_api.complement, term_request=request
+        )
+        return Term.from_dto(response.data)
+
+    async def determinize(
+        self,
+        term: Term,
+        execution_timeout: Optional[int] = None,
+    ) -> Term:
+        """Computes a deterministic FAIR automaton from the given term.
+
+        A deterministic FAIR guarantees consistent string ordering across paginated
+        generate_strings requests. Use this when term.is_deterministic is False or None
+        before calling generate_strings with an offset.
+
+        Args:
+            term: The term to determinize.
+            execution_timeout: Timeout in milliseconds for the operation.
+
+        Returns:
+            Term: A deterministic FAIR.
+        """
+        request = TermRequest(
+            term=term.to_dto(),
+            options=self._build_options(execution_timeout),
+        )
+        response = await self._execute_with_retry(
+            self._compute_api.determinize, term_request=request
         )
         return Term.from_dto(response.data)
 
@@ -609,7 +720,7 @@ class AsyncRegexSolverClient:
         offset: int,
         execution_timeout: Optional[int] = None,
     ) -> List[str]:
-        """Generates up to `limit` distinct strings matched by 'term', skipping the first 'offset' strings.
+        """Generates up to `limit` distinct strings matched by `term`, skipping the first `offset` strings.
 
         Args:
             term: The term to sample generated strings from.
@@ -621,25 +732,14 @@ class AsyncRegexSolverClient:
             List[str]: A list of strings that match the term.
         """
 
-        term_to_use = term.to_dto()
-        return_stable_term = False
-        if term._stable_term is not None:
-            term_to_use = term._stable_term.to_dto()
-        else:
-            return_stable_term = True
-
         request = GenerateStringsRequest(
-            term=term_to_use,
+            term=term.to_dto(),
             limit=limit,
             offset=offset,
-            returnStableTerm=return_stable_term,
             options=self._build_options(execution_timeout),
         )
         response = await self._execute_with_retry(
             self._generate_api.strings, generate_strings_request=request
         )
-
-        if response.data.term is not None:
-            term._stable_term = Term.from_dto(response.data.term)
 
         return response.data.strings.value

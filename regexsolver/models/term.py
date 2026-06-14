@@ -25,7 +25,6 @@ class Term(ABC):
         self._total: Optional[bool] = None
         self._pattern: Optional[str] = None
         self._dot: Optional[str] = None
-        self._stable_term: Optional["Term"] = None
 
         self._compiled_regex: Optional[Pattern] = None
 
@@ -71,7 +70,7 @@ class Term(ABC):
         if total is not None:
             self._total = total
 
-    def is_match(self, string: str) -> bool:
+    def matches(self, string: str) -> bool:
         """Client-side matching implementation."""
         pattern = self.get_pattern()
         if pattern is None:
@@ -110,18 +109,16 @@ class Term(ABC):
         actual_instance = dto.actual_instance
         if actual_instance is None:
             raise RuntimeError("Invalid Term DTO provided.")
-        if actual_instance.type == "regex":
-            return cls.regex(actual_instance.value)
-        else:
-            return cls.fair(actual_instance.value)
+        if isinstance(actual_instance, TermFair):
+            deterministic = (
+                actual_instance.metadata.deterministic
+                if actual_instance.metadata is not None
+                else None
+            )
+            return FairTerm(actual_instance.value, deterministic=deterministic)
+        return cls.regex(actual_instance.value)
 
     # --- Shared Getters/Setters ---
-
-    def get_cached_stable_term(self) -> Optional["Term"]:
-        return self._stable_term
-
-    def set_cached_stable_term(self, stable_term: Optional["Term"]):
-        self._stable_term = stable_term
 
     def __eq__(self, other: Any) -> bool:
         if self is other:
@@ -145,8 +142,7 @@ class RegexTerm(Term):
         return self.get_value()
 
     def get_fair(self) -> Optional[str]:
-        stable = self.get_cached_stable_term()
-        return stable.get_fair() if stable else None
+        return None
 
     def to_dto(self) -> GeneratedTerm:
         return GeneratedTerm(TermRegex(type="regex", value=self.get_value()))
@@ -156,6 +152,15 @@ class RegexTerm(Term):
 
 
 class FairTerm(Term):
+    def __init__(self, value: str, deterministic: Optional[bool] = None):
+        super().__init__(value)
+        self._deterministic = deterministic
+
+    @property
+    def is_deterministic(self) -> Optional[bool]:
+        """Whether this FAIR encodes a deterministic automaton, or None if unknown."""
+        return self._deterministic
+
     def get_pattern(self) -> Optional[str]:
         return self._pattern
 

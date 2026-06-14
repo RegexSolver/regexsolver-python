@@ -26,7 +26,7 @@ from typing_extensions import Self
 
 class TermRequest(BaseModel):
     """
-    Request a single term.
+    Request carrying a single term.
     """ # noqa: E501
     term: Term
     options: Optional[RequestOptions] = None

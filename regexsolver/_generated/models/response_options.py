@@ -19,6 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
+from regexsolver._generated.models.fair_response_options import FairResponseOptions
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -27,7 +28,8 @@ class ResponseOptions(BaseModel):
     Change how the engine returns results.
     """ # noqa: E501
     format: Optional[StrictStr] = Field(default=None, description="Return format of the term.")
-    __properties: ClassVar[List[str]] = ["format"]
+    fair: Optional[FairResponseOptions] = Field(default=None, description="Options applied when format is \"fair\". Ignored otherwise.")
+    __properties: ClassVar[List[str]] = ["format", "fair"]
 
     @field_validator('format')
     def format_validate_enum(cls, value):
@@ -78,6 +80,9 @@ class ResponseOptions(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # override the default output from pydantic by calling `to_dict()` of fair
+        if self.fair:
+            _dict['fair'] = self.fair.to_dict()
         return _dict
 
     @classmethod
@@ -90,7 +95,8 @@ class ResponseOptions(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "format": obj.get("format")
+            "format": obj.get("format"),
+            "fair": FairResponseOptions.from_dict(obj["fair"]) if obj.get("fair") is not None else None
         })
         return _obj
 

@@ -55,7 +55,7 @@ class GenerateApi:
     ) -> Strings200Response:
         """Strings
 
-        Generates up to `limit` distinct strings matched by `term`, skipping the first `offset` strings.
+        Generate up to `limit` distinct strings matched by `term`, skipping the first `offset` strings. Strings are only guaranteed to be distinct within a single call; pagination across calls is only consistent (no repeats or gaps) if `term` is deterministic. Call `/analyze/deterministic` to check, and `/compute/determinize` first if needed.
 
         :param generate_strings_request: (required)
         :type generate_strings_request: GenerateStringsRequest
@@ -128,7 +128,7 @@ class GenerateApi:
     ) -> ApiResponse[Strings200Response]:
         """Strings
 
-        Generates up to `limit` distinct strings matched by `term`, skipping the first `offset` strings.
+        Generate up to `limit` distinct strings matched by `term`, skipping the first `offset` strings. Strings are only guaranteed to be distinct within a single call; pagination across calls is only consistent (no repeats or gaps) if `term` is deterministic. Call `/analyze/deterministic` to check, and `/compute/determinize` first if needed.
 
         :param generate_strings_request: (required)
         :type generate_strings_request: GenerateStringsRequest
@@ -201,7 +201,7 @@ class GenerateApi:
     ) -> RESTResponseType:
         """Strings
 
-        Generates up to `limit` distinct strings matched by `term`, skipping the first `offset` strings.
+        Generate up to `limit` distinct strings matched by `term`, skipping the first `offset` strings. Strings are only guaranteed to be distinct within a single call; pagination across calls is only consistent (no repeats or gaps) if `term` is deterministic. Call `/analyze/deterministic` to check, and `/compute/determinize` first if needed.
 
         :param generate_strings_request: (required)
         :type generate_strings_request: GenerateStringsRequest

@@ -17,8 +17,9 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictInt
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Any, ClassVar, Dict, List, Optional
+from typing_extensions import Annotated
 from regexsolver._generated.models.request_options import RequestOptions
 from regexsolver._generated.models.term import Term
 from typing import Optional, Set
@@ -26,11 +27,11 @@ from typing_extensions import Self
 
 class RepeatRequest(BaseModel):
     """
-    Request to repeat a term between 'min' and 'max' times.
+    Request to repeat a term between `min` and `max` times.
     """ # noqa: E501
     term: Term = Field(description="Term to repeat.")
-    min: StrictInt = Field(description="Inclusive lower bound of repetitions.")
-    max: Optional[StrictInt] = Field(default=None, description="Inclusive upper bound. If omitted or null, the repetition is unbounded.")
+    min: Annotated[int, Field(strict=True, ge=0)] = Field(description="Inclusive lower bound of repetitions.")
+    max: Optional[Annotated[int, Field(strict=True, ge=0)]] = Field(default=None, description="Inclusive upper bound. If omitted or null, the repetition is unbounded.")
     options: Optional[RequestOptions] = None
     __properties: ClassVar[List[str]] = ["term", "min", "max", "options"]
 

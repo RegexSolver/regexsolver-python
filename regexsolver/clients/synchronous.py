@@ -5,6 +5,8 @@ import weakref
 from typing import List, Optional, Union
 
 from regexsolver.clients.asynchronous import AsyncRegexSolverClient
+from regexsolver.models.cardinality import Cardinality
+from regexsolver.models.length import Length
 from regexsolver.models.response_format import ResponseFormat
 from regexsolver.models.term import Term
 
@@ -85,7 +87,9 @@ class RegexSolverClient:
         self.close()
 
     # --- ANALYZE ---
-    def get_cardinality(self, term: Term, execution_timeout: Optional[int] = None):
+    def get_cardinality(
+        self, term: Term, execution_timeout: Optional[int] = None
+    ) -> Cardinality:
         """Computes how many unique strings the term matches.
 
         Args:
@@ -97,7 +101,9 @@ class RegexSolverClient:
         """
         return self._run_sync(self._aio.get_cardinality(term, execution_timeout))
 
-    def get_length(self, term: Term, execution_timeout: Optional[int] = None):
+    def get_length(
+        self, term: Term, execution_timeout: Optional[int] = None
+    ) -> Length:
         """Computes the minimum and maximum length of strings matched by the term.
 
         Args:
@@ -178,9 +184,24 @@ class RegexSolverClient:
             execution_timeout: Timeout in milliseconds for the operation.
 
         Returns:
-            bool: True if the term matches every possible strings.
+            bool: True if the term matches every possible string.
         """
         return self._run_sync(self._aio.is_total(term, execution_timeout))
+
+    def is_deterministic(
+        self, term: Term, execution_timeout: Optional[int] = None
+    ) -> bool:
+        """Check if the term's automaton is deterministic.
+        Only a deterministic FAIR guarantees consistent string ordering across paginated generate_strings requests; call determinize first if this is false.
+
+        Args:
+            term: The term to analyze.
+            execution_timeout: Timeout in milliseconds for the operation.
+
+        Returns:
+            bool: True if the term's automaton is deterministic.
+        """
+        return self._run_sync(self._aio.is_deterministic(term, execution_timeout))
 
     def get_pattern(self, term: Term, execution_timeout: Optional[int] = None) -> str:
         """Returns a regular expression pattern that represents the term.
@@ -211,6 +232,7 @@ class RegexSolverClient:
         self,
         *terms: Term,
         response_format: Optional[Union[ResponseFormat, str]] = None,
+        deterministic: Optional[bool] = None,
         execution_timeout: Optional[int] = None,
     ) -> Term:
         """Concatenates the given terms sequentially.
@@ -218,6 +240,9 @@ class RegexSolverClient:
         Args:
             *terms: A dynamic list of terms to concatenate in order.
             response_format: The return format of the term (any, regex or fair).
+            deterministic: When True, guarantees the returned FAIR encodes a deterministic
+                automaton. Only valid with response_format=ResponseFormat.FAIR or when
+                response_format is unset. Raises ValueError otherwise.
             execution_timeout: Timeout in milliseconds for the operation.
 
         Returns:
@@ -227,6 +252,7 @@ class RegexSolverClient:
             self._aio.concat(
                 *terms,
                 response_format=response_format,
+                deterministic=deterministic,
                 execution_timeout=execution_timeout,
             )
         )
@@ -235,6 +261,7 @@ class RegexSolverClient:
         self,
         *terms: Term,
         response_format: Optional[Union[ResponseFormat, str]] = None,
+        deterministic: Optional[bool] = None,
         execution_timeout: Optional[int] = None,
     ) -> Term:
         """Computes the intersection of the given terms.
@@ -242,6 +269,9 @@ class RegexSolverClient:
         Args:
             *terms: A dynamic list of terms to intersect.
             response_format: The return format of the term (any, regex or fair).
+            deterministic: When True, guarantees the returned FAIR encodes a deterministic
+                automaton. Only valid with response_format=ResponseFormat.FAIR or when
+                response_format is unset. Raises ValueError otherwise.
             execution_timeout: Timeout in milliseconds for the operation.
 
         Returns:
@@ -251,6 +281,7 @@ class RegexSolverClient:
             self._aio.intersection(
                 *terms,
                 response_format=response_format,
+                deterministic=deterministic,
                 execution_timeout=execution_timeout,
             )
         )
@@ -259,6 +290,7 @@ class RegexSolverClient:
         self,
         *terms: Term,
         response_format: Optional[Union[ResponseFormat, str]] = None,
+        deterministic: Optional[bool] = None,
         execution_timeout: Optional[int] = None,
     ) -> Term:
         """Computes the union of the given terms.
@@ -266,6 +298,9 @@ class RegexSolverClient:
         Args:
             *terms: A dynamic list of terms to combine.
             response_format: The return format of the term (any, regex or fair).
+            deterministic: When True, guarantees the returned FAIR encodes a deterministic
+                automaton. Only valid with response_format=ResponseFormat.FAIR or when
+                response_format is unset. Raises ValueError otherwise.
             execution_timeout: Timeout in milliseconds for the operation.
 
         Returns:
@@ -275,6 +310,7 @@ class RegexSolverClient:
             self._aio.union(
                 *terms,
                 response_format=response_format,
+                deterministic=deterministic,
                 execution_timeout=execution_timeout,
             )
         )
@@ -284,14 +320,18 @@ class RegexSolverClient:
         base_term: Term,
         excluded_term: Term,
         response_format: Optional[Union[ResponseFormat, str]] = None,
+        deterministic: Optional[bool] = None,
         execution_timeout: Optional[int] = None,
     ) -> Term:
-        """Computes the difference between the two provided terms.
+        """Computes the difference between the two given terms.
 
         Args:
             base_term: The base language term to subtract from.
             excluded_term: The term whose language should be removed from the base.
             response_format: The return format of the term (any, regex or fair).
+            deterministic: When True, guarantees the returned FAIR encodes a deterministic
+                automaton. Only valid with response_format=ResponseFormat.FAIR or when
+                response_format is unset. Raises ValueError otherwise.
             execution_timeout: Timeout in milliseconds for the operation.
 
         Returns:
@@ -302,6 +342,7 @@ class RegexSolverClient:
                 base_term,
                 excluded_term,
                 response_format=response_format,
+                deterministic=deterministic,
                 execution_timeout=execution_timeout,
             )
         )
@@ -312,6 +353,7 @@ class RegexSolverClient:
         min_val: int,
         max_val: Optional[int] = None,
         response_format: Optional[Union[ResponseFormat, str]] = None,
+        deterministic: Optional[bool] = None,
         execution_timeout: Optional[int] = None,
     ) -> Term:
         """Repeats a term between a minimum and maximum number of times.
@@ -321,6 +363,9 @@ class RegexSolverClient:
             min_val: The inclusive lower bound of repetitions.
             max_val: The inclusive upper bound. If None, repetitions are unbounded.
             response_format: The return format of the term (any, regex or fair).
+            deterministic: When True, guarantees the returned FAIR encodes a deterministic
+                automaton. Only valid with response_format=ResponseFormat.FAIR or when
+                response_format is unset. Raises ValueError otherwise.
             execution_timeout: Timeout in milliseconds for the operation.
 
         Returns:
@@ -332,6 +377,7 @@ class RegexSolverClient:
                 min_val,
                 max_val,
                 response_format=response_format,
+                deterministic=deterministic,
                 execution_timeout=execution_timeout,
             )
         )
@@ -340,6 +386,7 @@ class RegexSolverClient:
         self,
         term: Term,
         response_format: Optional[Union[ResponseFormat, str]] = None,
+        deterministic: Optional[bool] = None,
         execution_timeout: Optional[int] = None,
     ) -> Term:
         """Computes the complement of the given term.
@@ -347,6 +394,9 @@ class RegexSolverClient:
         Args:
             term: The term to complement.
             response_format: The return format of the term (any, regex or fair).
+            deterministic: When True, guarantees the returned FAIR encodes a deterministic
+                automaton. Only valid with response_format=ResponseFormat.FAIR or when
+                response_format is unset. Raises ValueError otherwise.
             execution_timeout: Timeout in milliseconds for the operation.
 
         Returns:
@@ -356,9 +406,30 @@ class RegexSolverClient:
             self._aio.complement(
                 term,
                 response_format=response_format,
+                deterministic=deterministic,
                 execution_timeout=execution_timeout,
             )
         )
+
+    def determinize(
+        self,
+        term: Term,
+        execution_timeout: Optional[int] = None,
+    ) -> Term:
+        """Computes a deterministic FAIR automaton from the given term.
+
+        A deterministic FAIR guarantees consistent string ordering across paginated
+        generate_strings requests. Use this when term.is_deterministic is False or None
+        before calling generate_strings with an offset.
+
+        Args:
+            term: The term to determinize.
+            execution_timeout: Timeout in milliseconds for the operation.
+
+        Returns:
+            Term: A deterministic FAIR.
+        """
+        return self._run_sync(self._aio.determinize(term, execution_timeout))
 
     # --- GENERATE ---
     def generate_strings(
@@ -368,7 +439,7 @@ class RegexSolverClient:
         offset: int,
         execution_timeout: Optional[int] = None,
     ) -> List[str]:
-        """Generates up to `limit` distinct strings matched by 'term', skipping the first 'offset' strings.
+        """Generates up to `limit` distinct strings matched by `term`, skipping the first `offset` strings.
 
         Args:
             term: The term to sample generated strings from.
