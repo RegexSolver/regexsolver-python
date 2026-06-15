@@ -26,6 +26,7 @@ from regexsolver.exceptions import (
     ApiError,
     AutomatonTooManyStatesError,
     BadRequestError,
+    FairSyntaxError,
     ForbiddenError,
     InternalServerError,
     InvalidJsonError,
@@ -171,6 +172,8 @@ class AsyncRegexSolverClient:
                 )
             if error_code == "RegexSyntaxError":
                 return RegexSyntaxError(error_msg, status_code=status_code, body=e.body)
+            if error_code == "FairSyntaxError":
+                return FairSyntaxError(error_msg, status_code=status_code, body=e.body)
             return BadRequestError(error_msg, status_code=status_code, body=e.body)
 
         elif status_code == 401:

@@ -74,6 +74,12 @@ class RegexSyntaxError(BadRequestError):
     pass
 
 
+class FairSyntaxError(BadRequestError):
+    """Raised when the provided FAIR value is malformed or cannot be decoded."""
+
+    pass
+
+
 class UnauthorizedError(ApiError):
     """Raised when the API returns a 401 Unauthorized error."""
 
