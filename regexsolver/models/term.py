@@ -11,6 +11,10 @@ from regexsolver.models.length import Length
 from regexsolver.models.term_properties_mixin import TermPropertiesMixin
 
 
+EMPTY_LANGUAGE_PATTERN = "[]"
+"""How the engine renders a language that matches no string at all."""
+
+
 class Term(ABC):
     """Represents a mathematical term (Regex or FAIR) on which operations can be performed."""
 
@@ -77,6 +81,11 @@ class Term(ABC):
             raise RuntimeError(
                 "The regex pattern of this term is not defined yet, call get_pattern() on the client to set it."
             )
+
+        # The engine renders the empty language as "[]". By definition it matches
+        # nothing, and `re` rejects the pattern outright.
+        if pattern == EMPTY_LANGUAGE_PATTERN:
+            return False
 
         if self._compiled_regex is None:
             try:

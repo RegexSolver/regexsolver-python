@@ -44,6 +44,12 @@ class TooManyTermsError(BadRequestError):
     pass
 
 
+class TooFewTermsError(BadRequestError):
+    """Raised when fewer terms are provided than the operation requires."""
+
+    pass
+
+
 class TimeoutTooLargeError(BadRequestError):
     """Raised when the requested `execution_timeout` exceeds the maximum allowed for your current plan."""
 

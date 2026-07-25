@@ -17,6 +17,7 @@ from regexsolver.exceptions import (
     RegexSyntaxError,
     TimeoutExceededError,
     TimeoutTooLargeError,
+    TooFewTermsError,
     TooManyRequestsError,
     TooManyTermsError,
     UnauthorizedError,
@@ -24,12 +25,14 @@ from regexsolver.exceptions import (
 from regexsolver.models.cardinality import BigInteger, Cardinality, Infinite, Integer
 from regexsolver.models.length import Length
 from regexsolver.models.response_format import ResponseFormat
-from regexsolver.models.term import Term
+from regexsolver.models.term import FairTerm, RegexTerm, Term
 
 __all__ = [
     "AsyncRegexSolverClient",
     "RegexSolverClient",
     "Term",
+    "FairTerm",
+    "RegexTerm",
     "ApiError",
     "AutomatonTooManyStatesError",
     "BadRequestError",
@@ -47,6 +50,7 @@ __all__ = [
     "TimeoutTooLargeError",
     "TooManyRequestsError",
     "InvalidNumberOfStringsToGenerateError",
+    "TooFewTermsError",
     "TooManyTermsError",
     "UnauthorizedError",
     "BigInteger",

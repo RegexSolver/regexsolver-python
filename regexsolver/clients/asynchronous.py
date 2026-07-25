@@ -3,6 +3,8 @@ import logging
 import weakref
 from typing import List, Optional, Union
 
+from pydantic import ValidationError
+
 from regexsolver._generated import (
     AnalyzeApi,
     ApiClient,
@@ -35,9 +37,11 @@ from regexsolver.exceptions import (
     MissingOrMalformedTokenError,
     NotFoundError,
     QuotaExceededError,
+    RegexSolverError,
     RegexSyntaxError,
     TimeoutExceededError,
     TimeoutTooLargeError,
+    TooFewTermsError,
     TooManyRequestsError,
     TooManyTermsError,
     UnauthorizedError,
@@ -48,6 +52,36 @@ from regexsolver.models.response_format import ResponseFormat
 from regexsolver.models.term import FairTerm, Term
 
 logger = logging.getLogger(__name__)
+
+
+def _build_request(model, **kwargs):
+    """Build a generated request model, keeping pydantic out of the public surface.
+
+    The generated models carry the constraints declared in openapi.yaml (`terms`
+    minItems, `limit` range), so an invalid call is rejected before it is sent --
+    which is good, it saves a round trip. But the raw `pydantic.ValidationError`
+    is not a `RegexSolverError`, so callers writing `except RegexSolverError`
+    would miss it. Translate it into the same error the API would have returned.
+    """
+    try:
+        return model(**kwargs)
+    except ValidationError as e:
+        raise _map_validation_error(e) from e
+
+
+def _map_validation_error(e: ValidationError) -> RegexSolverError:
+    errors = e.errors()
+    fields = {str(err["loc"][0]) for err in errors if err.get("loc")}
+    message = "; ".join(
+        f"{'.'.join(str(part) for part in err.get('loc', ()))}: {err['msg']}"
+        for err in errors
+    )
+
+    if "terms" in fields:
+        return TooFewTermsError(message, status_code=400)
+    if fields & {"limit", "offset"}:
+        return InvalidNumberOfStringsToGenerateError(message, status_code=400)
+    return BadRequestError(message, status_code=400)
 
 
 class AsyncRegexSolverClient:
@@ -152,6 +186,10 @@ class AsyncRegexSolverClient:
                 return InvalidJsonError(error_msg, status_code=status_code, body=e.body)
             if error_code == "TooManyTerms":
                 return TooManyTermsError(
+                    error_msg, status_code=status_code, body=e.body
+                )
+            if error_code == "TooFewTerms":
+                return TooFewTermsError(
                     error_msg, status_code=status_code, body=e.body
                 )
             if error_code == "TimeoutTooLarge":
@@ -259,7 +297,7 @@ class AsyncRegexSolverClient:
         if term._cardinality is not None:
             return term._cardinality
 
-        request = TermRequest(
+        request = _build_request(TermRequest, 
             term=term.to_dto(), options=self._build_options(execution_timeout)
         )
         response = await self._execute_with_retry(
@@ -285,7 +323,7 @@ class AsyncRegexSolverClient:
         if term._length is not None:
             return term._length
 
-        request = TermRequest(
+        request = _build_request(TermRequest, 
             term=term.to_dto(), options=self._build_options(execution_timeout)
         )
         response = await self._execute_with_retry(
@@ -309,7 +347,7 @@ class AsyncRegexSolverClient:
         Returns:
             bool: True if they are entirely equivalent, False otherwise.
         """
-        request = TwoTermsRequest(
+        request = _build_request(TwoTermsRequest, 
             terms=[term1.to_dto(), term2.to_dto()],
             options=self._build_options(execution_timeout),
         )
@@ -334,7 +372,7 @@ class AsyncRegexSolverClient:
         Returns:
             bool: True if every string matched by `term_subset` is also matched by `term_superset`.
         """
-        request = TwoTermsRequest(
+        request = _build_request(TwoTermsRequest, 
             terms=[term_subset.to_dto(), term_superset.to_dto()],
             options=self._build_options(execution_timeout),
         )
@@ -357,7 +395,7 @@ class AsyncRegexSolverClient:
         """
         if term._empty is not None:
             return term._empty
-        request = TermRequest(
+        request = _build_request(TermRequest, 
             term=term.to_dto(), options=self._build_options(execution_timeout)
         )
         response = await self._execute_with_retry(
@@ -383,7 +421,7 @@ class AsyncRegexSolverClient:
         """
         if term._empty_string is not None:
             return term._empty_string
-        request = TermRequest(
+        request = _build_request(TermRequest, 
             term=term.to_dto(), options=self._build_options(execution_timeout)
         )
         response = await self._execute_with_retry(
@@ -409,7 +447,7 @@ class AsyncRegexSolverClient:
         """
         if term._total is not None:
             return term._total
-        request = TermRequest(
+        request = _build_request(TermRequest, 
             term=term.to_dto(), options=self._build_options(execution_timeout)
         )
         response = await self._execute_with_retry(
@@ -439,7 +477,7 @@ class AsyncRegexSolverClient:
 
         if term._deterministic is not None:
             return term._deterministic
-        request = TermRequest(
+        request = _build_request(TermRequest, 
             term=term.to_dto(), options=self._build_options(execution_timeout)
         )
         response = await self._execute_with_retry(
@@ -460,10 +498,10 @@ class AsyncRegexSolverClient:
         Returns:
             str: A valid regular expression string representing the language.
         """
-        pattern = term.get_pattern()
+        pattern = term._pattern
         if pattern is not None:
             return pattern
-        request = TermRequest(
+        request = _build_request(TermRequest, 
             term=term.to_dto(), options=self._build_options(execution_timeout)
         )
         response = await self._execute_with_retry(
@@ -484,7 +522,7 @@ class AsyncRegexSolverClient:
         """
         if term._dot is not None:
             return term._dot
-        request = TermRequest(
+        request = _build_request(TermRequest, 
             term=term.to_dto(), options=self._build_options(execution_timeout)
         )
         response = await self._execute_with_retry(
@@ -514,7 +552,7 @@ class AsyncRegexSolverClient:
         Returns:
             Term: A newly computed concatenated term.
         """
-        request = MultiTermsRequest(
+        request = _build_request(MultiTermsRequest, 
             terms=[t.to_dto() for t in terms],
             options=self._build_options(
                 execution_timeout, response_format, deterministic
@@ -545,7 +583,7 @@ class AsyncRegexSolverClient:
         Returns:
             Term: A term representing only strings matched by ALL provided terms.
         """
-        request = MultiTermsRequest(
+        request = _build_request(MultiTermsRequest, 
             terms=[t.to_dto() for t in terms],
             options=self._build_options(
                 execution_timeout, response_format, deterministic
@@ -576,7 +614,7 @@ class AsyncRegexSolverClient:
         Returns:
             Term: A term representing strings matched by ANY of the provided terms.
         """
-        request = MultiTermsRequest(
+        request = _build_request(MultiTermsRequest, 
             terms=[t.to_dto() for t in terms],
             options=self._build_options(
                 execution_timeout, response_format, deterministic
@@ -609,7 +647,7 @@ class AsyncRegexSolverClient:
         Returns:
             Term: A computed difference term.
         """
-        request = TwoTermsRequest(
+        request = _build_request(TwoTermsRequest, 
             terms=[base_term.to_dto(), excluded_term.to_dto()],
             options=self._build_options(
                 execution_timeout, response_format, deterministic
@@ -644,7 +682,7 @@ class AsyncRegexSolverClient:
         Returns:
             Term: A computed repeated term.
         """
-        request = RepeatRequest(
+        request = _build_request(RepeatRequest, 
             term=term.to_dto(),
             min=min_val,
             max=max_val,
@@ -677,7 +715,7 @@ class AsyncRegexSolverClient:
         Returns:
             Term: The complemented term.
         """
-        request = TermRequest(
+        request = _build_request(TermRequest, 
             term=term.to_dto(),
             options=self._build_options(
                 execution_timeout, response_format, deterministic
@@ -706,7 +744,7 @@ class AsyncRegexSolverClient:
         Returns:
             Term: A deterministic FAIR.
         """
-        request = TermRequest(
+        request = _build_request(TermRequest, 
             term=term.to_dto(),
             options=self._build_options(execution_timeout),
         )
@@ -735,7 +773,7 @@ class AsyncRegexSolverClient:
             List[str]: A list of strings that match the term.
         """
 
-        request = GenerateStringsRequest(
+        request = _build_request(GenerateStringsRequest, 
             term=term.to_dto(),
             limit=limit,
             offset=offset,

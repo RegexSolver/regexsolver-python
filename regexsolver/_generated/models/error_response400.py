@@ -37,8 +37,8 @@ class ErrorResponse400(BaseModel):
         if value is None:
             return value
 
-        if value not in set(['InvalidJson', 'TooManyTerms', 'TimeoutTooLarge', 'TimeoutExceeded', 'InvalidNumberOfStringsToGenerate', 'AutomatonTooManyStates', 'RegexSyntaxError', 'FairSyntaxError']):
-            raise ValueError("must be one of enum values ('InvalidJson', 'TooManyTerms', 'TimeoutTooLarge', 'TimeoutExceeded', 'InvalidNumberOfStringsToGenerate', 'AutomatonTooManyStates', 'RegexSyntaxError', 'FairSyntaxError')")
+        if value not in set(['InvalidJson', 'TooManyTerms', 'TooFewTerms', 'TimeoutTooLarge', 'TimeoutExceeded', 'InvalidNumberOfStringsToGenerate', 'AutomatonTooManyStates', 'RegexSyntaxError', 'FairSyntaxError']):
+            raise ValueError("must be one of enum values ('InvalidJson', 'TooManyTerms', 'TooFewTerms', 'TimeoutTooLarge', 'TimeoutExceeded', 'InvalidNumberOfStringsToGenerate', 'AutomatonTooManyStates', 'RegexSyntaxError', 'FairSyntaxError')")
         return value
 
     model_config = ConfigDict(
