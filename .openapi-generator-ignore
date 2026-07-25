@@ -1,6 +1,9 @@
 setup.py
 setup.cfg
 tox.ini
+.gitignore
+requirements.txt
+test-requirements.txt
 git_push.sh
 .travis.yml
 .gitlab-ci.yml
@@ -10,8 +13,7 @@ docs/
 test/
 README.md
 
-
 regexsolver/__init__.py
-regexsolver/client.py
+regexsolver/clients/*
 regexsolver/exceptions.py
 regexsolver/models/*

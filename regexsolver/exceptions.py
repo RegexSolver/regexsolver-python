@@ -57,7 +57,8 @@ class TimeoutTooLargeError(BadRequestError):
 
 
 class TimeoutExceededError(BadRequestError):
-    """Raised when the execution of the request exceeds the provided `execution_timeout` or the maximum allowed for your current plan."""
+    """Raised when the execution of the request exceeds the provided
+    `execution_timeout` or the maximum allowed for your current plan."""
 
     pass
 

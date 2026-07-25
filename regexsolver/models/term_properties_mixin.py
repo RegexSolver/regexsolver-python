@@ -11,7 +11,8 @@ class TermPropertiesMixin:
         """Infers whether the term matches no strings at all.
 
         Returns:
-            Optional[bool]: True if it definitely matches no strings, False if it matches at least one, or None if it cannot be inferred.
+            Optional[bool]: True if it definitely matches no strings, False if it
+                matches at least one, or None if it cannot be inferred.
         """
         return None
 
@@ -19,7 +20,8 @@ class TermPropertiesMixin:
         """Infers whether the term matches strictly the empty string ("").
 
         Returns:
-            Optional[bool]: True if it definitely matches only the empty string, False if it matches other strings, or None if it cannot be inferred.
+            Optional[bool]: True if it definitely matches only the empty string,
+                False if it matches other strings, or None if it cannot be inferred.
         """
         return None
 
@@ -27,6 +29,7 @@ class TermPropertiesMixin:
         """Infers whether the term matches all possible strings.
 
         Returns:
-            Optional[bool]: True if it definitely matches all strings, False if it misses at least one string, or None if it cannot be inferred.
+            Optional[bool]: True if it definitely matches all strings, False if it
+                misses at least one string, or None if it cannot be inferred.
         """
         return None

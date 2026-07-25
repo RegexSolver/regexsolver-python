@@ -11,5 +11,4 @@ openapi-generator-cli generate \
   -o "$OUT_DIR" \
   --additional-properties=packageName="$PACKAGE_NAME",library=asyncio
 
-
-echo "pytest-asyncio >= 1.3.0" >> test-requirements.txt
+echo "API Generation Complete."

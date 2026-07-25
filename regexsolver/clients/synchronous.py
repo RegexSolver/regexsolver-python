@@ -192,7 +192,8 @@ class RegexSolverClient:
         self, term: Term, execution_timeout: Optional[int] = None
     ) -> bool:
         """Check if the term's automaton is deterministic.
-        Only a deterministic FAIR guarantees consistent string ordering across paginated generate_strings requests; call determinize first if this is false.
+        Only a deterministic FAIR guarantees consistent string ordering across
+        paginated generate_strings requests; call determinize first if this is false.
 
         Args:
             term: The term to analyze.

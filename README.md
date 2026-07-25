@@ -70,7 +70,8 @@ The API can handle terms in two formats:
 - `regex`: a regular expression pattern
 - `fair`: FAIR (Fast Automaton Internal Representation), a stable, signed format used internally by the engine
 
-By default, the engine returns whatever the operation produces, with no extra convertion. Override with `response_format`:
+By default, the engine returns whatever the operation produces, with no extra conversion. Override with `response_format`, accepted by the operations that return a term:
+
 ```python
 from regexsolver import ResponseFormat
 
@@ -109,7 +110,7 @@ Timeout is best effort. The exact time is not guaranteed.
 
 ## API Overview
 
-`RegexSolverClient` and `AsyncRegexSolverClient` exposes the following methods. All methods accept optional keyword arguments `response_format` and `execution_timeout`.
+`RegexSolverClient` and `AsyncRegexSolverClient` expose the following methods. Every method accepts optional keyword arguments: operations that return a term take `response_format`, `deterministic` and `execution_timeout`, while analyze operations and `determinize()` take `execution_timeout` only — the response format is not theirs to choose.
 
 ### Analyze
 
@@ -126,6 +127,8 @@ Timeout is best effort. The exact time is not guaranteed.
 | `client.is_deterministic(term, **kwargs)` | `bool` | `True` if the term's automaton is deterministic. Only a deterministic FAIR guarantees consistent string ordering across paginated `generate_strings()` calls; call `determinize()` first if this is `False`. |
 | `client.subset(term1, term2, **kwargs)` | `bool` | `True` if every string matched by `term1` is also matched by `term2`. |
 
+*Note: For `AsyncRegexSolverClient`, these methods are coroutines and must be awaited.*
+
 ### Compute
 
 | Method | Return | Description |
@@ -138,11 +141,15 @@ Timeout is best effort. The exact time is not guaranteed.
 | `client.repeat(term, min, max, **kwargs)` | `Term` | Computes the repetition of the term between `min` and `max` times. |
 | `client.union(term1, term2, ..., **kwargs)` | `Term` | Computes the union of the given terms. |
 
+*Note: For `AsyncRegexSolverClient`, these methods are coroutines and must be awaited.*
+
 ### Generate
 
 | Method | Return | Description |
 | -------- | ------- | ------- |
 | `client.generate_strings(term, limit, offset, **kwargs)` | `List[str]` | Generates up to `limit` unique strings matched by `term`, skipping the first `offset` strings. |
+
+*Note: For `AsyncRegexSolverClient`, this method is a coroutine and must be awaited.*
 
 ## Cross-Language Support
 

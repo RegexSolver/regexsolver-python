@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional, cast
+from typing import Any, Optional, cast
 
 from regexsolver._generated.models import Cardinality as GeneratedCardinality
 from regexsolver.models.term_properties_mixin import TermPropertiesMixin
@@ -21,7 +21,7 @@ class Cardinality(TermPropertiesMixin):
         Raises:
             ValueError: If the DTO contains an unknown cardinality type.
         """
-        actual_model = getattr(dto, "actual_instance", dto)
+        actual_model = cast(Any, getattr(dto, "actual_instance", dto))
         c_type = actual_model.type
 
         if c_type == "infinite":

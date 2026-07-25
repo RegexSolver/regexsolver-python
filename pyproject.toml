@@ -64,6 +64,18 @@ Issues = "https://github.com/RegexSolver/regexsolver-python/issues"
 Documentation = "https://docs.regexsolver.com/"
 "Source Code" = "https://github.com/RegexSolver/regexsolver-python"
 
+[tool.setuptools.packages.find]
+include = ["regexsolver*"]
+
+[tool.mypy]
+exclude = ["regexsolver/_generated/"]
+
+# Generated code is not linted or type checked; it is regenerated from
+# ../m-lab/shared/openapi.yaml by ./generate-api.sh.
+[[tool.mypy.overrides]]
+module = "regexsolver._generated.*"
+follow_imports = "silent"
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
