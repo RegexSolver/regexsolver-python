@@ -22,7 +22,9 @@ from regexsolver.exceptions import (
     TooManyTermsError,
     UnauthorizedError,
 )
+from regexsolver.models.account_limits import AccountLimits
 from regexsolver.models.cardinality import BigInteger, Cardinality, Infinite, Integer
+from regexsolver.models.generate_order import CharacterOrder, PathOrder
 from regexsolver.models.length import Length
 from regexsolver.models.response_format import ResponseFormat
 from regexsolver.models.term import FairTerm, RegexTerm, Term
@@ -56,7 +58,10 @@ __all__ = [
     "BigInteger",
     "Infinite",
     "Integer",
+    "AccountLimits",
     "Cardinality",
+    "CharacterOrder",
     "Length",
+    "PathOrder",
     "ResponseFormat",
 ]

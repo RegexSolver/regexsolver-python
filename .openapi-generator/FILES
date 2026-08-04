@@ -1,6 +1,6 @@
-.gitignore
 regexsolver/_generated/__init__.py
 regexsolver/_generated/api/__init__.py
+regexsolver/_generated/api/account_api.py
 regexsolver/_generated/api/analyze_api.py
 regexsolver/_generated/api/compute_api.py
 regexsolver/_generated/api/generate_api.py
@@ -9,6 +9,7 @@ regexsolver/_generated/api_response.py
 regexsolver/_generated/configuration.py
 regexsolver/_generated/exceptions.py
 regexsolver/_generated/models/__init__.py
+regexsolver/_generated/models/account_limits.py
 regexsolver/_generated/models/boolean.py
 regexsolver/_generated/models/cardinality.py
 regexsolver/_generated/models/cardinality200_response.py
@@ -24,10 +25,13 @@ regexsolver/_generated/models/error_response401.py
 regexsolver/_generated/models/error_response403.py
 regexsolver/_generated/models/execution_options.py
 regexsolver/_generated/models/fair_response_options.py
+regexsolver/_generated/models/generate_strings_character_order.py
+regexsolver/_generated/models/generate_strings_path_order.py
 regexsolver/_generated/models/generate_strings_request.py
 regexsolver/_generated/models/generate_strings_response.py
 regexsolver/_generated/models/length.py
 regexsolver/_generated/models/length200_response.py
+regexsolver/_generated/models/limits200_response.py
 regexsolver/_generated/models/multi_terms_request.py
 regexsolver/_generated/models/repeat_request.py
 regexsolver/_generated/models/request_options.py
@@ -43,5 +47,3 @@ regexsolver/_generated/models/term_request.py
 regexsolver/_generated/models/two_terms_request.py
 regexsolver/_generated/py.typed
 regexsolver/_generated/rest.py
-requirements.txt
-test-requirements.txt

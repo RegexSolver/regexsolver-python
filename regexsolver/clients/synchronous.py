@@ -5,7 +5,9 @@ import weakref
 from typing import List, Optional, Union
 
 from regexsolver.clients.asynchronous import AsyncRegexSolverClient
+from regexsolver.models.account_limits import AccountLimits
 from regexsolver.models.cardinality import Cardinality
+from regexsolver.models.generate_order import CharacterOrder, PathOrder
 from regexsolver.models.length import Length
 from regexsolver.models.response_format import ResponseFormat
 from regexsolver.models.term import Term
@@ -45,10 +47,18 @@ class RegexSolverClient:
     While it supports manual `.close()`, it is best used as a context manager.
     """
 
-    def __init__(self, api_token: str, base_url="https://api.regexsolver.com/v1"):
+    def __init__(
+        self,
+        api_token: str,
+        base_url: str = "https://api.regexsolver.com/v1",
+        auto_batch: bool = True,
+        max_terms_per_request: Optional[int] = None,
+    ):
         logger.debug("Initializing RegexSolverClient.")
         self._loop = _get_or_create_shared_loop()
-        self._aio = AsyncRegexSolverClient(api_token, base_url)
+        self._aio = AsyncRegexSolverClient(
+            api_token, base_url, auto_batch, max_terms_per_request
+        )
 
         # Ensure the async client is closed even if the user forgets to call close() or use 'with'
         self._finalizer = weakref.finalize(
@@ -85,6 +95,19 @@ class RegexSolverClient:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
+
+    # --- ACCOUNT ---
+    def get_account_limits(self) -> AccountLimits:
+        """Fetches the plan limits applying to the account.
+
+        The call never consumes request quota (it is only rate-limited) and
+        the result is cached on the client, so calling it again is free. The
+        cached `max_terms_count` also drives auto-batching.
+
+        Returns:
+            AccountLimits: The five plan limits.
+        """
+        return self._run_sync(self._aio.get_account_limits())
 
     # --- ANALYZE ---
     def get_cardinality(
@@ -439,6 +462,13 @@ class RegexSolverClient:
         limit: int,
         offset: int,
         execution_timeout: Optional[int] = None,
+        *,
+        path_order: Optional[Union[PathOrder, str]] = None,
+        character_order: Optional[Union[CharacterOrder, str]] = None,
+        seed: Optional[int] = None,
+        min_length: Optional[int] = None,
+        max_length: Optional[int] = None,
+        charset: Optional[str] = None,
     ) -> List[str]:
         """Generates up to `limit` distinct strings matched by `term`, skipping the first `offset` strings.
 
@@ -447,10 +477,33 @@ class RegexSolverClient:
             limit: The maximum number of unique strings to return.
             offset: Number of matched strings to skip before starting to collect the results. Used for pagination.
             execution_timeout: Timeout in milliseconds for the operation.
+            path_order: Order in which the paths (shapes) of the language are
+                scheduled (sweep, interleave or shuffled). Defaults to sweep.
+            character_order: Order in which the strings within each path are
+                produced (ascending or shuffled). Defaults to ascending.
+            seed: Seed behind the shuffled modes. The default seed is fixed,
+                so two calls sharing a seed generate the same strings and
+                `offset` pages through them consistently.
+            min_length: Shortest string to generate. Shorter strings are left
+                out of the enumeration entirely, `offset` never counting them.
+            max_length: Longest string to generate.
+            charset: Restricts generation to the given characters, e.g.
+                `[a-z]`. Paths requiring a character outside it are dropped.
 
         Returns:
             List[str]: A list of strings that match the term.
         """
         return self._run_sync(
-            self._aio.generate_strings(term, limit, offset, execution_timeout)
+            self._aio.generate_strings(
+                term,
+                limit,
+                offset,
+                execution_timeout,
+                path_order=path_order,
+                character_order=character_order,
+                seed=seed,
+                min_length=min_length,
+                max_length=max_length,
+                charset=charset,
+            )
         )

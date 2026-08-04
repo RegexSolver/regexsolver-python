@@ -17,20 +17,30 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, StrictBool
+from pydantic import BaseModel, ConfigDict, Field, StrictInt, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List
-from regexsolver._generated.models.generate_strings_response import GenerateStringsResponse
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
 
-class Strings200Response(BaseModel):
+class AccountLimits(BaseModel):
     """
-    Strings200Response
+    The plan limits currently applying to the account.
     """ # noqa: E501
-    success: StrictBool
-    data: GenerateStringsResponse
-    __properties: ClassVar[List[str]] = ["success", "data"]
+    type: StrictStr
+    max_requests_count: StrictInt = Field(description="Maximum number of requests allowed per billing period.", alias="maxRequestsCount")
+    max_requests_rate: StrictInt = Field(description="Maximum number of requests allowed per second. `0` means no rate limit is enforced.", alias="maxRequestsRate")
+    max_terms_count: StrictInt = Field(description="Maximum number of terms accepted in a single request.", alias="maxTermsCount")
+    max_timeout: StrictInt = Field(description="Maximum execution timeout per request, in milliseconds.", alias="maxTimeout")
+    max_states_count: StrictInt = Field(description="Maximum number of automaton states an operation may build.", alias="maxStatesCount")
+    __properties: ClassVar[List[str]] = ["type", "maxRequestsCount", "maxRequestsRate", "maxTermsCount", "maxTimeout", "maxStatesCount"]
+
+    @field_validator('type')
+    def type_validate_enum(cls, value):
+        """Validates the enum"""
+        if value not in set(['accountLimits']):
+            raise ValueError("must be one of enum values ('accountLimits')")
+        return value
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -50,7 +60,7 @@ class Strings200Response(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of Strings200Response from a JSON string"""
+        """Create an instance of AccountLimits from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -71,14 +81,11 @@ class Strings200Response(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # override the default output from pydantic by calling `to_dict()` of data
-        if self.data:
-            _dict['data'] = self.data.to_dict()
         return _dict
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of Strings200Response from a dict"""
+        """Create an instance of AccountLimits from a dict"""
         if obj is None:
             return None
 
@@ -86,8 +93,12 @@ class Strings200Response(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "success": obj.get("success"),
-            "data": GenerateStringsResponse.from_dict(obj["data"]) if obj.get("data") is not None else None
+            "type": obj.get("type"),
+            "maxRequestsCount": obj.get("maxRequestsCount"),
+            "maxRequestsRate": obj.get("maxRequestsRate"),
+            "maxTermsCount": obj.get("maxTermsCount"),
+            "maxTimeout": obj.get("maxTimeout"),
+            "maxStatesCount": obj.get("maxStatesCount")
         })
         return _obj
 

@@ -1,11 +1,14 @@
 import asyncio
 import logging
+import random
+import time
 import weakref
-from typing import List, Optional, Union
+from typing import Awaitable, Callable, List, Optional, Union
 
 from pydantic import ValidationError
 
 from regexsolver._generated import (
+    AccountApi,
     AnalyzeApi,
     ApiClient,
     ApiException,
@@ -46,12 +49,34 @@ from regexsolver.exceptions import (
     TooManyTermsError,
     UnauthorizedError,
 )
+from regexsolver.models.account_limits import AccountLimits
 from regexsolver.models.cardinality import Cardinality, Infinite, Integer
+from regexsolver.models.generate_order import CharacterOrder, PathOrder
 from regexsolver.models.length import Length
 from regexsolver.models.response_format import ResponseFormat
 from regexsolver.models.term import FairTerm, Term
 
 logger = logging.getLogger(__name__)
+
+# Retry policy for 429 responses: retry as long as the total wait stays
+# within the budget, adding full jitter on top of `Retry-After` so concurrent
+# waiters do not re-collide as a single burst. The values are shared across
+# all the official clients — change them together.
+_RETRY_BUDGET_S = 300.0
+_JITTER_BASE_S = 0.25
+_JITTER_CAP_S = 2.0
+_DEFAULT_RETRY_AFTER_S = 1.0
+
+
+def _get_retry_after(headers) -> float:
+    """Case-insensitively read the Retry-After header, in seconds."""
+    for key, value in (headers or {}).items():
+        if str(key).lower() == "retry-after":
+            try:
+                return float(value)
+            except (TypeError, ValueError):
+                break
+    return _DEFAULT_RETRY_AFTER_S
 
 
 def _build_request(model, **kwargs):
@@ -91,17 +116,35 @@ class AsyncRegexSolverClient:
     Can be used as a standalone object or as an `async with` context manager.
     """
 
-    def __init__(self, api_token: str, base_url="https://api.regexsolver.com/v1"):
+    def __init__(
+        self,
+        api_token: str,
+        base_url: str = "https://api.regexsolver.com/v1",
+        auto_batch: bool = True,
+        max_terms_per_request: Optional[int] = None,
+    ):
+        if not api_token:
+            raise ValueError("api_token is required")
+        if max_terms_per_request is not None and max_terms_per_request < 2:
+            raise ValueError("max_terms_per_request must be at least 2")
+
         logger.debug("Initializing AsyncRegexSolverClient.")
         self.configuration = Configuration(host=base_url, access_token=api_token)
         self.api_client = ApiClient(self.configuration)
         self.api_client.user_agent = "RegexSolver Python / 1.1.0"
 
+        self._account_api = AccountApi(self.api_client)
         self._analyze_api = AnalyzeApi(self.api_client)
         self._compute_api = ComputeApi(self.api_client)
         self._generate_api = GenerateApi(self.api_client)
 
         self._rate_limiter = get_rate_limiter(api_token)
+
+        self._auto_batch = auto_batch
+        self._max_terms_per_request = max_terms_per_request
+        self._limits: Optional[AccountLimits] = None
+        # Created lazily: asyncio primitives must be born on the running loop.
+        self._limits_lock: Optional[asyncio.Lock] = None
 
         # Ensure the underlying aiohttp session is closed when the client is GC'd.
         self._finalizer = weakref.finalize(self, self._run_cleanup, self.api_client)
@@ -136,27 +179,33 @@ class AsyncRegexSolverClient:
 
     # --- HELPER ---
     async def _execute_with_retry(self, api_method, **kwargs):
-        retried = False
+        attempt = 0
+        first_failure_at: Optional[float] = None
         while True:
             await self._rate_limiter.wait()
+            if attempt > 0:
+                await asyncio.sleep(
+                    random.uniform(0.0, min(_JITTER_BASE_S * 2**attempt, _JITTER_CAP_S))
+                )
             try:
                 return await api_method(**kwargs)
             except ApiException as e:
-                if e.status == 429:
-                    if retried:
-                        raise self._map_error(e)
+                if e.status != 429:
+                    raise self._map_error(e)
 
-                    retried = True
-                    headers = e.headers or {}
-                    retry_after = float(headers.get("Retry-After", 1))
-                    logger.debug(
-                        "429 Too Many Requests hit. "
-                        f"Triggering rate limiter for {retry_after} seconds."
-                    )
-                    await self._rate_limiter.trigger(retry_after)
-                    continue
+                retry_after = _get_retry_after(e.headers)
+                now = time.monotonic()
+                if first_failure_at is None:
+                    first_failure_at = now
+                if now - first_failure_at + retry_after > _RETRY_BUDGET_S:
+                    raise self._map_error(e)
 
-                raise self._map_error(e)
+                logger.debug(
+                    "429 Too Many Requests hit. "
+                    f"Triggering rate limiter for {retry_after} seconds."
+                )
+                self._rate_limiter.trigger(retry_after)
+                attempt += 1
 
     def _map_error(self, e: ApiException) -> Exception:
         status_code = e.status
@@ -280,6 +329,107 @@ class AsyncRegexSolverClient:
         if response_format is not None or deterministic is not None:
             options.response = response_opts
         return options
+
+    # --- ACCOUNT ---
+    async def get_account_limits(self) -> AccountLimits:
+        """Fetches the plan limits applying to the account.
+
+        The call never consumes request quota (it is only rate-limited) and
+        the result is cached on the client, so calling it again is free. The
+        cached `max_terms_count` also drives auto-batching.
+
+        Returns:
+            AccountLimits: The five plan limits.
+        """
+        if self._limits is not None:
+            return self._limits
+        if self._limits_lock is None:
+            self._limits_lock = asyncio.Lock()
+        async with self._limits_lock:
+            if self._limits is None:
+                response = await self._execute_with_retry(self._account_api.limits)
+                self._limits = AccountLimits.from_dto(response.data)
+        return self._limits
+
+    # --- BATCHING ---
+    def _effective_max_terms(self) -> Optional[int]:
+        """The largest term count to send in one request, when known."""
+        server_max = self._limits.max_terms_count if self._limits else None
+        if self._max_terms_per_request is not None:
+            if server_max is not None:
+                return min(self._max_terms_per_request, server_max)
+            return self._max_terms_per_request
+        return server_max
+
+    async def _run_nary(
+        self,
+        api_method,
+        terms,
+        response_format: Optional[Union[ResponseFormat, str]],
+        deterministic: Optional[bool],
+        execution_timeout: Optional[int],
+    ) -> Term:
+        """Run an n-ary operation (concat/intersection/union), transparently
+        splitting the terms into several requests when they exceed the
+        account's terms-per-request limit (auto-batching).
+        """
+        terms = list(terms)
+
+        async def call(batch: List[Term], final: bool) -> Term:
+            # Intermediate results are fed straight back into the next
+            # request, so only the final call carries the caller's response
+            # options; execution_timeout bounds every constituent request.
+            request = _build_request(
+                MultiTermsRequest,
+                terms=[t.to_dto() for t in batch],
+                options=self._build_options(
+                    execution_timeout,
+                    response_format if final else None,
+                    deterministic if final else None,
+                ),
+            )
+            response = await self._execute_with_retry(
+                api_method, multi_terms_request=request
+            )
+            return Term.from_dto(response.data)
+
+        max_terms = self._effective_max_terms() if self._auto_batch else None
+        if max_terms is not None and len(terms) > max_terms:
+            return await self._fold(call, terms, max_terms)
+
+        try:
+            return await call(terms, True)
+        except TooManyTermsError as too_many:
+            if not self._auto_batch or max_terms is not None:
+                raise
+            try:
+                await self.get_account_limits()
+            except RegexSolverError as fetch_error:
+                logger.debug(f"Fetching account limits failed: {fetch_error}")
+                raise too_many from None
+            max_terms = self._effective_max_terms()
+            if max_terms is None or max_terms < 2 or len(terms) <= max_terms:
+                raise
+            return await self._fold(call, terms, max_terms)
+
+    @staticmethod
+    async def _fold(
+        call: Callable[[List[Term], bool], Awaitable[Term]],
+        terms: List[Term],
+        max_terms: int,
+    ) -> Term:
+        """Left fold: combine the first `max_terms` terms, then keep feeding
+        the accumulated result back with the next `max_terms - 1` terms.
+        Left-associative, so `concat` order is preserved; `union` and
+        `intersection` are commutative and unaffected.
+        """
+        acc = await call(terms[:max_terms], False)
+        index = max_terms
+        while index < len(terms):
+            batch = [acc] + terms[index: index + max_terms - 1]
+            index += max_terms - 1
+            acc = await call(batch, index >= len(terms))
+        return acc
 
     # --- ANALYZE ---
     async def get_cardinality(
@@ -563,17 +713,13 @@ class AsyncRegexSolverClient:
         Returns:
             Term: A newly computed concatenated term.
         """
-        request = _build_request(
-            MultiTermsRequest,
-            terms=[t.to_dto() for t in terms],
-            options=self._build_options(
-                execution_timeout, response_format, deterministic
-            ),
+        return await self._run_nary(
+            self._compute_api.concat,
+            terms,
+            response_format,
+            deterministic,
+            execution_timeout,
         )
-        response = await self._execute_with_retry(
-            self._compute_api.concat, multi_terms_request=request
-        )
-        return Term.from_dto(response.data)
 
     async def intersection(
         self,
@@ -595,17 +741,13 @@ class AsyncRegexSolverClient:
         Returns:
             Term: A term representing only strings matched by ALL provided terms.
         """
-        request = _build_request(
-            MultiTermsRequest,
-            terms=[t.to_dto() for t in terms],
-            options=self._build_options(
-                execution_timeout, response_format, deterministic
-            ),
+        return await self._run_nary(
+            self._compute_api.intersection,
+            terms,
+            response_format,
+            deterministic,
+            execution_timeout,
         )
-        response = await self._execute_with_retry(
-            self._compute_api.intersection, multi_terms_request=request
-        )
-        return Term.from_dto(response.data)
 
     async def union(
         self,
@@ -627,17 +769,13 @@ class AsyncRegexSolverClient:
         Returns:
             Term: A term representing strings matched by ANY of the provided terms.
         """
-        request = _build_request(
-            MultiTermsRequest,
-            terms=[t.to_dto() for t in terms],
-            options=self._build_options(
-                execution_timeout, response_format, deterministic
-            ),
+        return await self._run_nary(
+            self._compute_api.union,
+            terms,
+            response_format,
+            deterministic,
+            execution_timeout,
         )
-        response = await self._execute_with_retry(
-            self._compute_api.union, multi_terms_request=request
-        )
-        return Term.from_dto(response.data)
 
     async def difference(
         self,
@@ -778,6 +916,13 @@ class AsyncRegexSolverClient:
         limit: int,
         offset: int,
         execution_timeout: Optional[int] = None,
+        *,
+        path_order: Optional[Union[PathOrder, str]] = None,
+        character_order: Optional[Union[CharacterOrder, str]] = None,
+        seed: Optional[int] = None,
+        min_length: Optional[int] = None,
+        max_length: Optional[int] = None,
+        charset: Optional[str] = None,
     ) -> List[str]:
         """Generates up to `limit` distinct strings matched by `term`, skipping the first `offset` strings.
 
@@ -786,18 +931,42 @@ class AsyncRegexSolverClient:
             limit: The maximum number of unique strings to return.
             offset: Number of matched strings to skip before starting to collect the results. Used for pagination.
             execution_timeout: Timeout in milliseconds for the operation.
+            path_order: Order in which the paths (shapes) of the language are
+                scheduled (sweep, interleave or shuffled). Defaults to sweep.
+            character_order: Order in which the strings within each path are
+                produced (ascending or shuffled). Defaults to ascending.
+            seed: Seed behind the shuffled modes. The default seed is fixed,
+                so two calls sharing a seed generate the same strings and
+                `offset` pages through them consistently.
+            min_length: Shortest string to generate. Shorter strings are left
+                out of the enumeration entirely, `offset` never counting them.
+            max_length: Longest string to generate.
+            charset: Restricts generation to the given characters, e.g.
+                `[a-z]`. Paths requiring a character outside it are dropped.
 
         Returns:
             List[str]: A list of strings that match the term.
         """
-
-        request = _build_request(
-            GenerateStringsRequest,
+        kwargs = dict(
             term=term.to_dto(),
             limit=limit,
             offset=offset,
             options=self._build_options(execution_timeout),
         )
+        if path_order is not None:
+            kwargs["path_order"] = str(path_order)
+        if character_order is not None:
+            kwargs["character_order"] = str(character_order)
+        if seed is not None:
+            kwargs["seed"] = seed
+        if min_length is not None:
+            kwargs["min_length"] = min_length
+        if max_length is not None:
+            kwargs["max_length"] = max_length
+        if charset is not None:
+            kwargs["charset"] = charset
+
+        request = _build_request(GenerateStringsRequest, **kwargs)
         response = await self._execute_with_retry(
             self._generate_api.strings, generate_strings_request=request
         )

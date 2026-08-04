@@ -110,7 +110,7 @@ Timeout is best effort. The exact time is not guaranteed.
 
 ## API Overview
 
-`RegexSolverClient` and `AsyncRegexSolverClient` expose the following methods. Every method accepts optional keyword arguments: operations that return a term take `response_format`, `deterministic` and `execution_timeout`, while analyze operations and `determinize()` take `execution_timeout` only — the response format is not theirs to choose.
+`RegexSolverClient` and `AsyncRegexSolverClient` expose the following methods. Every method accepts optional keyword arguments: operations that return a term take `response_format`, `deterministic` and `execution_timeout`, while analyze operations and `determinize()` take `execution_timeout` only; the response format is not theirs to choose. `generate_strings()` additionally takes its ordering, seed, length and charset options as keyword arguments.
 
 ### Analyze
 
@@ -125,7 +125,7 @@ Timeout is best effort. The exact time is not guaranteed.
 | `client.is_empty_string(term, **kwargs)` | `bool` | `True` if the term matches only the empty string. |
 | `client.is_total(term, **kwargs)` | `bool` | `True` if the term matches all possible strings. |
 | `client.is_deterministic(term, **kwargs)` | `bool` | `True` if the term's automaton is deterministic. Only a deterministic FAIR guarantees consistent string ordering across paginated `generate_strings()` calls; call `determinize()` first if this is `False`. |
-| `client.subset(term1, term2, **kwargs)` | `bool` | `True` if every string matched by `term1` is also matched by `term2`. |
+| `client.subset(term_subset, term_superset, **kwargs)` | `bool` | `True` if every string matched by `term_subset` is also matched by `term_superset`. |
 
 *Note: For `AsyncRegexSolverClient`, these methods are coroutines and must be awaited.*
 
@@ -136,9 +136,9 @@ Timeout is best effort. The exact time is not guaranteed.
 | `client.complement(term, **kwargs)` | `Term` | Computes the complement of the given term. |
 | `client.concat(term1, term2, ..., **kwargs)` | `Term` | Concatenates multiple terms in order. |
 | `client.determinize(term, **kwargs)` | `Term` | Computes a deterministic FAIR for the given term, suitable for consistent pagination with `generate_strings()`. |
-| `client.difference(term1, term2, **kwargs)` | `Term` | Computes the difference `term1 - term2`. |
+| `client.difference(base_term, excluded_term, **kwargs)` | `Term` | Computes the difference `base_term - excluded_term`. |
 | `client.intersection(term1, term2, ..., **kwargs)` | `Term` | Computes the intersection of the given terms. |
-| `client.repeat(term, min, max, **kwargs)` | `Term` | Computes the repetition of the term between `min` and `max` times. |
+| `client.repeat(term, min_val, max_val, **kwargs)` | `Term` | Computes the repetition of the term between `min_val` and `max_val` times. |
 | `client.union(term1, term2, ..., **kwargs)` | `Term` | Computes the union of the given terms. |
 
 *Note: For `AsyncRegexSolverClient`, these methods are coroutines and must be awaited.*
@@ -147,7 +147,7 @@ Timeout is best effort. The exact time is not guaranteed.
 
 | Method | Return | Description |
 | -------- | ------- | ------- |
-| `client.generate_strings(term, limit, offset, **kwargs)` | `List[str]` | Generates up to `limit` unique strings matched by `term`, skipping the first `offset` strings. |
+| `client.generate_strings(term, limit, offset, **kwargs)` | `List[str]` | Generates up to `limit` unique strings matched by `term`, skipping the first `offset` strings. Keyword arguments control `path_order`, `character_order`, `seed`, `min_length`, `max_length` and `charset`. |
 
 *Note: For `AsyncRegexSolverClient`, this method is a coroutine and must be awaited.*
 

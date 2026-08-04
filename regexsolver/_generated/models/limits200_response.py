@@ -19,17 +19,17 @@ import json
 
 from pydantic import BaseModel, ConfigDict, StrictBool
 from typing import Any, ClassVar, Dict, List
-from regexsolver._generated.models.generate_strings_response import GenerateStringsResponse
+from regexsolver._generated.models.account_limits import AccountLimits
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
 
-class Strings200Response(BaseModel):
+class Limits200Response(BaseModel):
     """
-    Strings200Response
+    Limits200Response
     """ # noqa: E501
     success: StrictBool
-    data: GenerateStringsResponse
+    data: AccountLimits
     __properties: ClassVar[List[str]] = ["success", "data"]
 
     model_config = ConfigDict(
@@ -50,7 +50,7 @@ class Strings200Response(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of Strings200Response from a JSON string"""
+        """Create an instance of Limits200Response from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -78,7 +78,7 @@ class Strings200Response(BaseModel):
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of Strings200Response from a dict"""
+        """Create an instance of Limits200Response from a dict"""
         if obj is None:
             return None
 
@@ -87,7 +87,7 @@ class Strings200Response(BaseModel):
 
         _obj = cls.model_validate({
             "success": obj.get("success"),
-            "data": GenerateStringsResponse.from_dict(obj["data"]) if obj.get("data") is not None else None
+            "data": AccountLimits.from_dict(obj["data"]) if obj.get("data") is not None else None
         })
         return _obj
 
