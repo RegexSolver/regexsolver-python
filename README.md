@@ -9,7 +9,7 @@
 pip install regexsolver
 ```
 
-Requirements: **Python >= 3.9**
+Requirements: **Python >= 3.10**
 
 ## Quick Start
 
