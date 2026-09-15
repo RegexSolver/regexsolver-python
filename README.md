@@ -1,4 +1,10 @@
 # RegexSolver Python API Client
+
+[![PyPI](https://img.shields.io/pypi/v/regexsolver)](https://pypi.org/project/regexsolver/)
+[![Python versions](https://img.shields.io/pypi/pyversions/regexsolver)](https://pypi.org/project/regexsolver/)
+[![CI](https://github.com/RegexSolver/regexsolver-python/actions/workflows/ci.yml/badge.svg)](https://github.com/RegexSolver/regexsolver-python/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/pypi/l/regexsolver)](LICENSE)
+
 [Homepage](https://regexsolver.com) | [Online Demo](https://regexsolver.com/demo) | [Documentation](https://docs.regexsolver.com) | [Developer Console](https://console.regexsolver.com)
 
 **RegexSolver** is a powerful toolkit for building, combining, and analyzing regular expressions. It is designed for constraint solvers, test generators, and other systems that need advanced regex operations.
