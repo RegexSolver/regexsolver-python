@@ -71,8 +71,8 @@ include = ["regexsolver*"]
 [tool.mypy]
 exclude = ["regexsolver/_generated/"]
 
-# Generated code is not linted or type checked; it is regenerated from
-# ../m-lab/shared/openapi.yaml by ./generate-api.sh.
+# Generated code is not linted or type checked; it is regenerated from the
+# specification the API publishes, by ./generate-api.sh.
 [[tool.mypy.overrides]]
 module = "regexsolver._generated.*"
 follow_imports = "silent"

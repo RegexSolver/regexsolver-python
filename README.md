@@ -103,7 +103,7 @@ try:
     
     res = client.difference(term1, term2, execution_timeout=100)
 except TimeoutExceededError as error:
-    print(error) # The API returned the following error: The operation took too much time.
+    print(error) # The operation took too much time.
 ```
 
 Timeout is best effort. The exact time is not guaranteed.
@@ -150,6 +150,8 @@ Timeout is best effort. The exact time is not guaranteed.
 | `client.generate_strings(term, limit, offset, **kwargs)` | `List[str]` | Generates up to `limit` unique strings matched by `term`, skipping the first `offset` strings. Keyword arguments control `path_order`, `character_order`, `seed`, `min_length`, `max_length` and `charset`. |
 
 *Note: For `AsyncRegexSolverClient`, this method is a coroutine and must be awaited.*
+
+See [CHANGELOG.md](CHANGELOG.md) for notable changes.
 
 ## Cross-Language Support
 
