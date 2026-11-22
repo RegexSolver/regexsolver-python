@@ -4,6 +4,12 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Deprecated
+
+- The client is retired: the hosted RegexSolver API it calls was shut down in November 2026, so no release works any more. Use the [regexsolver](https://github.com/RegexSolver/regexsolver) Rust library instead. The repository is archived.
+
 ## [1.1.0] - 2026-08-08
 
 The singleton `RegexSolver` becomes an instantiable `RegexSolverClient`, with `AsyncRegexSolverClient` beside it, every operation moves from `Term` onto the client, and the SDK covers the whole API rather than the seven endpoints it knew about. The API moved with it, to a new contract served under `/v1`, so 1.0.x no longer reaches an endpoint that exists; see *Compatibility* below.
